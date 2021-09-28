@@ -1,5 +1,4 @@
 import os
-from random import shuffle
 
 class Entry:
     def __init__(self, word):
@@ -64,6 +63,9 @@ class Slot:
 
     def __eq__(self, other):
         return (self.row, self.col, self.dir) == (other.row, other.col, other.dir)
+    
+    def __str__(self):
+        return f'[{self.row}, {self.col}]-{self.dir}'
 
 class Crossword:
     EMPTY = '.'
@@ -77,9 +79,12 @@ class Crossword:
         # initalize grid array
         self.grid = [[Crossword.EMPTY for c in range(cols)] for r in range(rows)]
         
-        # initialize words map
+        # initialize words maps
         self.entries = {}
-        self.generate_words()
+        self.across_crossings = {}
+        self.down_crossings = {}
+
+        self.generate_entries()
 
     # prints crossword
     def __str__(self):
@@ -110,27 +115,24 @@ class Crossword:
         # alter crossing words in words map
         if dir == Slot.DOWN:
             for y in range(len(word)):
-                x = col
-                while Slot(row + y, x, Slot.ACROSS) not in self.entries:
-                    x -= 1
-                self.entries[Slot(row + y, x, Slot.ACROSS)].set_letter_at_index(word[y], col - x)
+                crossing_slot = self.across_crossings[row + y, col]
+                self.entries[crossing_slot].set_letter_at_index(word[y], col - crossing_slot.col)
         else:
             for x in range(len(word)):
-                y = row
-                while Slot(y, col + x, Slot.DOWN) not in self.entries:
-                    y -= 1
-                self.entries[Slot(y, col + x, Slot.DOWN)].set_letter_at_index(word[x], row - y)
+                crossing_slot = self.down_crossings[row, col + x]
+                self.entries[crossing_slot].set_letter_at_index(word[x], row - crossing_slot.row)
     
     # places block in certain slot
     def put_block(self, row, col):
         self.grid[row][col] = Crossword.BLOCK
-        self.generate_words()
+        self.generate_entries()
 
     # generates dictionary that maps Slot to Entry
-    def generate_words(self):
+    def generate_entries(self):
         # reset words map
         self.entries = {}
-        self.crosses = {}
+        self.across_crossings = {}
+        self.down_crossings = {}
 
         # generate across words
         for r in range(self.rows):
@@ -139,6 +141,7 @@ class Crossword:
             for c in range(self.cols):
                 letter = self.grid[r][c]
                 if letter != Crossword.BLOCK:
+                    self.across_crossings[r, c] = slot
                     curr_word += letter
                     if len(curr_word) == 1:
                         slot.row = r
@@ -158,6 +161,7 @@ class Crossword:
             for r in range(self.rows):
                 letter = self.grid[r][c]
                 if letter != Crossword.BLOCK:
+                    self.down_crossings[r, c] = slot
                     curr_word += letter
                     if len(curr_word) == 1:
                         slot.row = r
@@ -207,21 +211,20 @@ class Crossword:
         return True
 
     # returns whether or not a given word is already in the grid
+    # TODO: make more efficient with word set
     def is_dupe(self, word):
         for pos in self.entries:
             if self.entries[pos].word == word:
                 return True
         return False
 
-
-    def solve(self, wordlist):
-        os.system('cls' if os.name == 'nt' else 'clear')
-        print(self)
+    def solve(self, wordlist, printout=False):
+        if printout:
+            os.system('cls' if os.name == 'nt' else 'clear')
+            print(self)
 
         # choose slot with fewest matches
-        fm = self.fewest_matches(wordlist)
-        slot = fm[0]
-        num_matches = fm[1]
+        slot, num_matches = self.fewest_matches(wordlist)
 
         # if some slot has zero matches, fail
         if num_matches == 0:
@@ -246,28 +249,3 @@ class Crossword:
             # if no match works, restore previous word
             self.put_word(previous_word.word, slot.row, slot.col, slot.dir)
             return False
-
-size = 5
-
-wordlist = [w.upper() for w in open('../crossword-scripts/allwords.txt').read().splitlines() if len(w) <= size]
-shuffle(wordlist)
-
-xword = Crossword(size, size)
-
-xword.put_block(0,0)
-xword.put_block(4,4)
-
-# xword.put_block(0,4)
-# xword.put_block(1,4)
-# xword.put_block(2,4)
-# xword.put_block(6,4)
-# xword.put_block(7,4)
-# xword.put_block(8,4)
-# xword.put_block(4,0)
-# xword.put_block(4,1)
-# xword.put_block(4,2)
-# xword.put_block(4,6)
-# xword.put_block(4,7)
-# xword.put_block(4,8)
-
-xword.solve(wordlist)
