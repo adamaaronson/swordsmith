@@ -1,22 +1,7 @@
 import os
 from random import shuffle
 
-class Position:
-    ACROSS = 'across'
-    DOWN = 'down'
-
-    def __init__(self, row=0, col=0, dir=ACROSS):
-        self.row = row
-        self.col = col
-        self.dir = dir
-
-    def __hash__(self):
-        return hash((self.row, self.col, self.dir))
-
-    def __eq__(self, other):
-        return (self.row, self.col, self.dir) == (other.row, other.col, other.dir)
-
-class Word:
+class Entry:
     def __init__(self, word):
         self.word = word
     
@@ -44,27 +29,41 @@ class Word:
         return matches
     
     # returns number of words in wordlist that match pattern of this word
+    # TODO: optimize this with a trie or regex or something
     def num_matches(self, wordlist):
         matches = 0
         length = len(self.word)
-        for w in [w.upper() for w in wordlist if len(w) == length]:
-            for i in range(length):
-                if self.word[i] != Crossword.EMPTY and self.word[i] != w[i]:
-                    break
-            else:
-                matches += 1
+        for w in wordlist:
+            if len(w) == length:
+                for i in range(length):
+                    if self.word[i] != Crossword.EMPTY and self.word[i] != w[i]:
+                        break
+                else:
+                    matches += 1
         return matches
 
     # returns whether word is completely filled
     def is_filled(self):
-        for l in self.word:
-            if l == Crossword.EMPTY:
-                return False
-        return True
+        return Crossword.EMPTY not in self.word
 
     # sets character at index to given character
     def set_letter_at_index(self, letter, i):
         self.word = self.word[0:i] + letter + self.word[i+1 :]
+
+class Slot:
+    ACROSS = 'across'
+    DOWN = 'down'
+
+    def __init__(self, row=0, col=0, dir=ACROSS):
+        self.row = row
+        self.col = col
+        self.dir = dir
+
+    def __hash__(self):
+        return hash((self.row, self.col, self.dir))
+
+    def __eq__(self, other):
+        return (self.row, self.col, self.dir) == (other.row, other.col, other.dir)
 
 class Crossword:
     EMPTY = '.'
@@ -76,14 +75,10 @@ class Crossword:
         self.cols = cols
 
         # initalize grid array
-        self.grid = []
-        for _ in range(rows):
-            self.grid.append([])
-            for _ in range(cols):
-                self.grid[len(self.grid) - 1].append(Crossword.EMPTY)
+        self.grid = [[Crossword.EMPTY for c in range(cols)] for r in range(rows)]
         
         # initialize words map
-        self.words = {}
+        self.entries = {}
         self.generate_words()
 
     # prints crossword
@@ -95,14 +90,14 @@ class Crossword:
             output += '\n'
         return output
 
-    # returns whether given grid Position contains a letter
+    # returns whether given grid Slot contains a letter
     def is_letter(self, row, col):
         return self.grid[row][col] != Crossword.EMPTY and self.grid[row][col] != Crossword.BLOCK
     
-    # places word in given Position
-    def put_word(self, word, row=0, col=0, dir=Position.ACROSS):
+    # places word in given Slot
+    def put_word(self, word, row=0, col=0, dir=Slot.ACROSS):
         # place word in grid array
-        if dir == Position.DOWN:
+        if dir == Slot.DOWN:
             for y in range(len(word)):
                 self.grid[row + y][col] = word[y]
         else:
@@ -110,89 +105,90 @@ class Crossword:
                 self.grid[row][col + x] = word[x]
         
         # place word in words map
-        self.words[Position(row, col, dir)] = Word(word)
+        self.entries[Slot(row, col, dir)] = Entry(word)
 
         # alter crossing words in words map
-        if dir == Position.DOWN:
+        if dir == Slot.DOWN:
             for y in range(len(word)):
                 x = col
-                while Position(row + y, x, Position.ACROSS) not in self.words:
+                while Slot(row + y, x, Slot.ACROSS) not in self.entries:
                     x -= 1
-                self.words[Position(row + y, x, Position.ACROSS)].set_letter_at_index(word[y], col - x)
+                self.entries[Slot(row + y, x, Slot.ACROSS)].set_letter_at_index(word[y], col - x)
         else:
             for x in range(len(word)):
                 y = row
-                while Position(y, col + x, Position.DOWN) not in self.words:
+                while Slot(y, col + x, Slot.DOWN) not in self.entries:
                     y -= 1
-                self.words[Position(y, col + x, Position.DOWN)].set_letter_at_index(word[x], row - y)
+                self.entries[Slot(y, col + x, Slot.DOWN)].set_letter_at_index(word[x], row - y)
     
-    # places block in certain position
+    # places block in certain slot
     def put_block(self, row, col):
         self.grid[row][col] = Crossword.BLOCK
         self.generate_words()
 
-    # generates dictionary that maps Position to Word
+    # generates dictionary that maps Slot to Entry
     def generate_words(self):
         # reset words map
-        self.words = {}
+        self.entries = {}
+        self.crosses = {}
 
         # generate across words
         for r in range(self.rows):
             curr_word = ''
-            position = Position(0, 0, Position.ACROSS)
+            slot = Slot(0, 0, Slot.ACROSS)
             for c in range(self.cols):
                 letter = self.grid[r][c]
                 if letter != Crossword.BLOCK:
                     curr_word += letter
                     if len(curr_word) == 1:
-                        position.row = r
-                        position.col = c
+                        slot.row = r
+                        slot.col = c
                 else:
                     if curr_word != '':
-                        self.words[position] = Word(curr_word)
+                        self.entries[slot] = Entry(curr_word)
                         curr_word = ''
-                        position = Position(0, 0, Position.ACROSS)
+                        slot = Slot(0, 0, Slot.ACROSS)
             if curr_word != '':
-                self.words[position] = Word(curr_word)
+                self.entries[slot] = Entry(curr_word)
 
         # generate down words
         for c in range(self.cols):
             curr_word = ''
-            position = Position(0, 0, Position.DOWN)
+            slot = Slot(0, 0, Slot.DOWN)
             for r in range(self.rows):
                 letter = self.grid[r][c]
                 if letter != Crossword.BLOCK:
                     curr_word += letter
                     if len(curr_word) == 1:
-                        position.row = r
-                        position.col = c
+                        slot.row = r
+                        slot.col = c
                 else:
                     if curr_word != '':
-                        self.words[position] = Word(curr_word)
+                        self.entries[slot] = Entry(curr_word)
                         curr_word = ''
-                        position = Position(0, 0, Position.DOWN)
+                        slot = Slot(0, 0, Slot.DOWN)
             if curr_word != '':
-                self.words[position] = Word(curr_word)
+                self.entries[slot] = Entry(curr_word)
 
     # prints the whole word map, nicely formatted
     def print_words(self):
-        for position in self.words:
-            print(position.row, position.col, position.dir, self.words[position])
+        for slot in self.entries:
+            print(slot.row, slot.col, slot.dir, self.entries[slot])
 
-    # finds the position that has the fewest possible matches, this is probably the best next place to look
+    # finds the slot that has the fewest possible matches, this is probably the best next place to look
     def fewest_matches(self, wordlist):
-        fewest_matches_position = None
+        fewest_matches_slot = None
         fewest_matches = len(wordlist) + 1
 
-        for position in self.words:
-            word = self.words[position]
+        for slot in self.entries:
+            word = self.entries[slot]
             if word.is_filled():
                 continue
             matches = word.num_matches(wordlist)
             if matches < fewest_matches:
                 fewest_matches = matches
-                fewest_matches_position = position
-        return (fewest_matches_position, fewest_matches)
+                fewest_matches_slot = slot
+        return (fewest_matches_slot, fewest_matches)
 
     # returns whether or not the whole crossword is filled
     def is_filled(self):
@@ -204,16 +200,16 @@ class Crossword:
 
     # returns whether or not the crossword is validly filled
     def has_valid_words(self, wordlist):
-        for pos in self.words:
-            w = self.words[pos]
+        for pos in self.entries:
+            w = self.entries[pos]
             if w.is_filled() and w.word not in wordlist:
                 return False
         return True
 
     # returns whether or not a given word is already in the grid
     def is_dupe(self, word):
-        for pos in self.words:
-            if self.words[pos].word == word:
+        for pos in self.entries:
+            if self.entries[pos].word == word:
                 return True
         return False
 
@@ -222,12 +218,12 @@ class Crossword:
         os.system('cls' if os.name == 'nt' else 'clear')
         print(self)
 
-        # choose position with fewest matches
+        # choose slot with fewest matches
         fm = self.fewest_matches(wordlist)
-        position = fm[0]
+        slot = fm[0]
         num_matches = fm[1]
 
-        # if some position has zero matches, fail
+        # if some slot has zero matches, fail
         if num_matches == 0:
             return False
 
@@ -235,31 +231,31 @@ class Crossword:
         if self.is_filled():
             return self.has_valid_words(wordlist)
         else:
-            # iterate through all possible matches in the fewest-match position
-            previous_word = self.words[position]
-            matches = self.words[position].get_matches(wordlist)
+            # iterate through all possible matches in the fewest-match slot
+            previous_word = self.entries[slot]
+            matches = self.entries[slot].get_matches(wordlist)
             for match in matches:
                 if self.is_dupe(match):
                     continue
-                # try placing the match in position and try to solve with the match there, otherwise continue
-                self.put_word(match, position.row, position.col, position.dir)
+                # try placing the match in slot and try to solve with the match there, otherwise continue
+                self.put_word(match, slot.row, slot.col, slot.dir)
                 if not self.has_valid_words(wordlist):
                     continue
                 if self.solve(wordlist):
                     return True
             # if no match works, restore previous word
-            self.put_word(previous_word.word, position.row, position.col, position.dir)
+            self.put_word(previous_word.word, slot.row, slot.col, slot.dir)
             return False
 
-size = 7
+size = 5
 
-wordlist = [w.upper() for w in open('allwords.txt').read().splitlines() if len(w) <= size]
+wordlist = [w.upper() for w in open('../crossword-scripts/allwords.txt').read().splitlines() if len(w) <= size]
 shuffle(wordlist)
 
 xword = Crossword(size, size)
 
 xword.put_block(0,0)
-xword.put_block(6,6)
+xword.put_block(4,4)
 
 # xword.put_block(0,4)
 # xword.put_block(1,4)
