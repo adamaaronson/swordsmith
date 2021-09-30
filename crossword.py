@@ -50,8 +50,8 @@ class Entry:
         self.word = self.word[0:i] + letter + self.word[i+1 :]
 
 class Slot:
-    ACROSS = 'across'
-    DOWN = 'down'
+    ACROSS = 'A'
+    DOWN = 'D'
 
     def __init__(self, row=0, col=0, dir=ACROSS):
         self.row = row
@@ -75,7 +75,7 @@ class Crossword:
     def __init__(self, rows, cols):
         self.rows = rows
         self.cols = cols
-
+        
         # initalize grid array
         self.grid = [[Crossword.EMPTY for c in range(cols)] for r in range(rows)]
         
@@ -244,7 +244,7 @@ class Crossword:
                 self.put_word(match, slot.row, slot.col, slot.dir)
                 if not self.has_valid_words(wordlist):
                     continue
-                if self.solve(wordlist):
+                if self.solve(wordlist, printout=printout):
                     return True
             # if no match works, restore previous word
             self.put_word(previous_word.word, slot.row, slot.col, slot.dir)
