@@ -49,6 +49,7 @@ class Entry:
     def set_letter_at_index(self, letter, i):
         self.word = self.word[0:i] + letter + self.word[i+1 :]
 
+
 class Slot:
     ACROSS = 'A'
     DOWN = 'D'
@@ -66,6 +67,7 @@ class Slot:
     
     def __str__(self):
         return f'[{self.row}, {self.col}]-{self.dir}'
+
 
 class Crossword:
     EMPTY = '.'

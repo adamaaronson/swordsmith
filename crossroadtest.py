@@ -6,6 +6,9 @@ size = 5
 wordlist = [w.upper() for w in open('../crossword-scripts/allwords.txt').read().splitlines()]
 # wordlist = [w.split(';') for w in wordlist]
 # wordlist = [w[0] for w in wordlist if int(w[1]) >= 40]
+
+
+wordlist = [w for w in wordlist if len(w) <= size]
 shuffle(wordlist)
 
 xword = xw.Crossword(size, size)
@@ -31,5 +34,4 @@ xword.put_block(4,4)
 
 # print(xword)
 
-xword.solve(wordlist, printout=False)
-print(xword)
+xword.solve(wordlist, printout=True)
