@@ -109,7 +109,6 @@ class Slot:
         return f'[{self.row}, {self.col}]-{self.dir}'
 
 
-# TODO: add wordlist into crossword class
 class Crossword:
     EMPTY = '.'
     BLOCK = '#'
@@ -148,7 +147,10 @@ class Crossword:
         return self.grid[row][col] != Crossword.EMPTY and self.grid[row][col] != Crossword.BLOCK
     
     # places word in given Slot
-    def put_word(self, word, row=0, col=0, dir=Slot.ACROSS):
+    def put_word(self, word, row=0, col=0, dir=Slot.ACROSS, add_to_wordlist=True):
+        if add_to_wordlist and self.wordlist:
+            self.wordlist.add_word(word)
+
         # place word in grid array
         if dir == Slot.DOWN:
             for y in range(len(word)):
@@ -284,19 +286,19 @@ class Crossword:
         # if the grid is filled, succeed if every word is valid and otherwise fail
         if self.is_filled():
             return self.has_valid_words()
-        else:
-            # iterate through all possible matches in the fewest-match slot
-            previous_word = self.entries[slot]
-            matches = self.entries[slot].get_matches(self.wordlist)
-            for match in matches:
-                if self.is_dupe(match):
-                    continue
-                # try placing the match in slot and try to solve with the match there, otherwise continue
-                self.put_word(match, slot.row, slot.col, slot.dir)
-                if not self.has_valid_words():
-                    continue
-                if self.solve_dfs(printout=printout):
-                    return True
-            # if no match works, restore previous word
-            self.put_word(previous_word.word, slot.row, slot.col, slot.dir)
-            return False
+        
+        # iterate through all possible matches in the fewest-match slot
+        previous_word = self.entries[slot]
+        matches = self.entries[slot].get_matches(self.wordlist)
+        for match in matches:
+            if self.is_dupe(match):
+                continue
+            # try placing the match in slot and try to solve with the match there, otherwise continue
+            self.put_word(match, slot.row, slot.col, slot.dir)
+            if not self.has_valid_words():
+                continue
+            if self.solve_dfs(printout=printout):
+                return True
+        # if no match works, restore previous word
+        self.put_word(previous_word.word, slot.row, slot.col, slot.dir, add_to_wordlist=False)
+        return False
