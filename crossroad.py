@@ -1,4 +1,42 @@
-import os
+import utils
+
+
+class Wordlist:
+    def __init__(self, words):
+        self.words = set(words)
+        self.added_words = set()
+
+        # create mapping from lengths to sets of words of that length
+        self.words_by_length = {}
+        for w in words:
+            self._add_to_words_by_length(w)
+    
+    def _add_to_words_by_length(self, word):
+        length = len(word)
+        if length in self.words_by_length:
+            self.words_by_length[length].add(word)
+        else:
+            self.words_by_length[length] = set([word])
+    
+    def _remove_from_words_by_length(self, word):
+        length = len(word)
+        if length in self.words_by_length:
+            if word in self.words_by_length[length]:
+                self.words_by_length[length].remove(word)
+    
+    def add_word(self, word):
+        if word not in self.words:
+            self.words.add(word)
+            self.added_words.add(word)
+            self._add_to_words_by_length(word)
+    
+    def remove_word(self, word):
+        if word in self.words:
+            self.words.remove(word)
+            self._remove_from_words_by_length(word)
+        if word in self.added_words:
+            self.added_words.remove(word)
+
 
 class Entry:
     def __init__(self, word):
@@ -18,13 +56,14 @@ class Entry:
     def get_matches(self, wordlist):
         matches = []
         length = len(self.word)
-        for w in wordlist:
-            if len(w) == length:
-                for i in range(length):
-                    if self.word[i] != Crossword.EMPTY and self.word[i] != w[i]:
-                        break
-                else:
-                    matches.append(w)
+        if length not in wordlist.words_by_length:
+            return []
+        for w in wordlist.words_by_length[length]:
+            for i in range(length):
+                if self.word[i] != Crossword.EMPTY and self.word[i] != w[i]:
+                    break
+            else:
+                matches.append(w)
         return matches
     
     # returns number of words in wordlist that match pattern of this word
@@ -32,13 +71,14 @@ class Entry:
     def num_matches(self, wordlist):
         matches = 0
         length = len(self.word)
-        for w in wordlist:
-            if len(w) == length:
-                for i in range(length):
-                    if self.word[i] != Crossword.EMPTY and self.word[i] != w[i]:
-                        break
-                else:
-                    matches += 1
+        if length not in wordlist.words_by_length:
+            return 0
+        for w in wordlist.words_by_length[length]:
+            for i in range(length):
+                if self.word[i] != Crossword.EMPTY and self.word[i] != w[i]:
+                    break
+            else:
+                matches += 1
         return matches
 
     # returns whether word is completely filled
@@ -69,6 +109,7 @@ class Slot:
         return f'[{self.row}, {self.col}]-{self.dir}'
 
 
+# TODO: add wordlist into crossword class
 class Crossword:
     EMPTY = '.'
     BLOCK = '#'
@@ -77,6 +118,7 @@ class Crossword:
     def __init__(self, rows, cols):
         self.rows = rows
         self.cols = cols
+        self.wordlist = None
         
         # initalize grid array
         self.grid = [[Crossword.EMPTY for c in range(cols)] for r in range(rows)]
@@ -97,6 +139,10 @@ class Crossword:
             output += '\n'
         return output
 
+    # assign this crossword a wordlist
+    def set_wordlist(self, wordlist):
+        self.wordlist = wordlist
+    
     # returns whether given grid Slot contains a letter
     def is_letter(self, row, col):
         return self.grid[row][col] != Crossword.EMPTY and self.grid[row][col] != Crossword.BLOCK
@@ -176,21 +222,22 @@ class Crossword:
             if curr_word != '':
                 self.entries[slot] = Entry(curr_word)
 
+
     # prints the whole word map, nicely formatted
     def print_words(self):
         for slot in self.entries:
             print(slot.row, slot.col, slot.dir, self.entries[slot])
 
     # finds the slot that has the fewest possible matches, this is probably the best next place to look
-    def fewest_matches(self, wordlist):
+    def fewest_matches(self):
         fewest_matches_slot = None
-        fewest_matches = len(wordlist) + 1
+        fewest_matches = len(self.wordlist.words) + 1
 
         for slot in self.entries:
             word = self.entries[slot]
             if word.is_filled():
                 continue
-            matches = word.num_matches(wordlist)
+            matches = word.num_matches(self.wordlist)
             if matches < fewest_matches:
                 fewest_matches = matches
                 fewest_matches_slot = slot
@@ -205,10 +252,10 @@ class Crossword:
         return True
 
     # returns whether or not the crossword is validly filled
-    def has_valid_words(self, wordlist):
+    def has_valid_words(self):
         for pos in self.entries:
             w = self.entries[pos]
-            if w.is_filled() and w.word not in wordlist:
+            if w.is_filled() and w.word not in self.wordlist.words:
                 return False
         return True
 
@@ -219,14 +266,16 @@ class Crossword:
             if self.entries[pos].word == word:
                 return True
         return False
-
-    def solve(self, wordlist, printout=False):
+    
+    # solves the crossword using a naive, terrible, dfs algorithm
+    # TODO: optimize efficiency of this before moving onto heuristic-based algorithm
+    def solve_dfs(self, printout=False):
         if printout:
-            os.system('cls' if os.name == 'nt' else 'clear')
+            utils.clear_terminal()
             print(self)
 
         # choose slot with fewest matches
-        slot, num_matches = self.fewest_matches(wordlist)
+        slot, num_matches = self.fewest_matches()
 
         # if some slot has zero matches, fail
         if num_matches == 0:
@@ -234,19 +283,19 @@ class Crossword:
 
         # if the grid is filled, succeed if every word is valid and otherwise fail
         if self.is_filled():
-            return self.has_valid_words(wordlist)
+            return self.has_valid_words()
         else:
             # iterate through all possible matches in the fewest-match slot
             previous_word = self.entries[slot]
-            matches = self.entries[slot].get_matches(wordlist)
+            matches = self.entries[slot].get_matches(self.wordlist)
             for match in matches:
                 if self.is_dupe(match):
                     continue
                 # try placing the match in slot and try to solve with the match there, otherwise continue
                 self.put_word(match, slot.row, slot.col, slot.dir)
-                if not self.has_valid_words(wordlist):
+                if not self.has_valid_words():
                     continue
-                if self.solve(wordlist, printout=printout):
+                if self.solve_dfs(printout=printout):
                     return True
             # if no match works, restore previous word
             self.put_word(previous_word.word, slot.row, slot.col, slot.dir)
