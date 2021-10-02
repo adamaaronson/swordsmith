@@ -1,3 +1,3 @@
 # CrossRoad
 
-At the intersection of crosswords and AI.
+At the intersection of crosswords and code.
