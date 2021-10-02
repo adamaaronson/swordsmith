@@ -2,7 +2,7 @@ import crossroad as xr
 from random import shuffle
 import time
 
-words = [w.upper() for w in open('words/spreadthewordlist.dict').read().splitlines()]
+words = [w.upper() for w in open('wordlist/spreadthewordlist.dict').read().splitlines()]
 words = [w.split(';') for w in words]
 words = [w[0] for w in words if int(w[1]) >= 50]
 shuffle(words)
@@ -71,7 +71,7 @@ def xword_5x5():
 tic = time.time()
 
 xword = xword_5x5()
-xword.solve_dfs(printout=True)
+xword.fill('dfs', printout=True)
 
 toc = time.time()
 

@@ -1,4 +1,4 @@
-import utils
+import crossroad.utils as utils
 
 EMPTY = '·'
 BLOCK = '█'
@@ -248,9 +248,16 @@ class Crossword:
                 return True
         return False
     
-    # solves the crossword using a naive, terrible, dfs algorithm
+    # fill the crossword using the given algorithm
+    def fill(self, strategy, printout=False):
+        if strategy == 'dfs':
+            self.fill_dfs(printout)
+        else:
+            raise ValueError('Invalid strategy')
+    
+    # fills the crossword using a naive, terrible, dfs algorithm
     # TODO: optimize efficiency of this before moving onto heuristic-based algorithm
-    def solve_dfs(self, printout=False):
+    def fill_dfs(self, printout=False):
         if printout:
             utils.clear_terminal()
             print(self)
@@ -276,7 +283,7 @@ class Crossword:
             self.put_word(match, slot.row, slot.col, slot.dir)
             if not self.has_valid_words():
                 continue
-            if self.solve_dfs(printout=printout):
+            if self.fill_dfs(printout=printout):
                 return True
         # if no match works, restore previous word
         self.put_word(previous_word, slot.row, slot.col, slot.dir, add_to_wordlist=False)
