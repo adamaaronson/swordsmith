@@ -9,63 +9,70 @@ shuffle(words)
 
 wordlist = xr.Wordlist(words)
 
-xword = xr.Crossword(15, 15, wordlist)
+def xword_15x15():
+    xword = xr.Crossword(15, 15, wordlist)
+    
+    blocks1 = [
+        (0, 5),
+        (1, 5),
+        (0, 11),
+        (1, 11),
+        (2, 11),
+        (3, 0),
+        (3, 1),
+        (3, 2),
+        (3, 3),
+        (3, 8),
+        (3, 9),
+        (4, 7),
+        (5, 6),
+        (6, 5),
+        (7, 4),
+        (8, 3),
+        (9, 0),
+        (9, 1)
+    ]
 
-# xword.put_block(0,4)
-# xword.put_block(1,4)
-# xword.put_block(2,4)
-# xword.put_block(6,4)
-# xword.put_block(7,4)
-# xword.put_block(8,4)
-# xword.put_block(4,0)
-# xword.put_block(4,1)
-# xword.put_block(4,2)
-# xword.put_block(4,6)
-# xword.put_block(4,7)
-# xword.put_block(4,8)
+    blocks2 = []
 
-# for w in xword.down_crossings:
-#     print(w, xword.down_crossings[w])
+    for (bx, by) in blocks1:
+        blocks2.append((14 - bx, 14 - by))
 
-# print(xword)
+    blocks = blocks1 + blocks2
 
-blocks1 = [
-    (0, 5),
-    (1, 5),
-    (0, 11),
-    (1, 11),
-    (2, 11),
-    (3, 0),
-    (3, 1),
-    (3, 2),
-    (3, 3),
-    (3, 8),
-    (3, 9),
-    (4, 7),
-    (5, 6),
-    (6, 5),
-    (7, 4),
-    (8, 3),
-    (9, 0),
-    (9, 1)
-]
+    for b in blocks:
+        xword.put_block(*b)
+    
+    return xword
 
-blocks2 = []
 
-for (bx, by) in blocks1:
-    blocks2.append((14 - bx, 14 - by))
+def xword_9x9():
+    xword = xr.Crossword(9, 9, wordlist)
+    xword.put_block(0, 4)
+    xword.put_block(1, 4)
+    xword.put_block(2, 4)
+    xword.put_block(6, 4)
+    xword.put_block(7, 4)
+    xword.put_block(8, 4)
+    xword.put_block(4, 0)
+    xword.put_block(4, 1)
+    xword.put_block(4, 2)
+    xword.put_block(4, 6)
+    xword.put_block(4, 7)
+    xword.put_block(4, 8)
+    return xword
 
-blocks = blocks1 + blocks2
 
-for b in blocks:
-    xword.put_block(*b)
+def xword_5x5():
+    return xr.Crossword(5, 5, wordlist)
+
+
 
 tic = time.time()
 
+xword = xword_5x5()
 xword.solve_dfs(printout=True)
 
 toc = time.time()
 
-xword.print_words()
-
-print(toc - tic)
+print(f'\nTook {toc - tic} seconds to fill.')
