@@ -1,4 +1,5 @@
-import crossroad.utils as utils
+import utils
+import random
 
 EMPTY = '·'
 BLOCK = '█'
@@ -12,10 +13,26 @@ class Wordlist:
         self.words = set(words)
         self.added_words = set()
 
-        # create mapping from lengths to sets of words of that length
+        # mapping from lengths to sets of words of that length
         self.words_by_length = {}
         for w in words:
             self.__add_to_words_by_length(w)
+
+        # mapping from wildcard patterns to lists of matching words, used for memoization
+        self.pattern_matches = {}
+    
+    def add_word(self, word):
+        if word not in self.words:
+            self.words.add(word)
+            self.added_words.add(word)
+            self.__add_to_words_by_length(word)
+    
+    def remove_word(self, word):
+        if word in self.words:
+            self.words.remove(word)
+            self.__remove_from_words_by_length(word)
+        if word in self.added_words:
+            self.added_words.remove(word)
     
     def __add_to_words_by_length(self, word):
         length = len(word)
@@ -30,18 +47,26 @@ class Wordlist:
             if word in self.words_by_length[length]:
                 self.words_by_length[length].remove(word)
     
-    def add_word(self, word):
-        if word not in self.words:
-            self.words.add(word)
-            self.added_words.add(word)
-            self.__add_to_words_by_length(word)
-    
-    def remove_word(self, word):
-        if word in self.words:
-            self.words.remove(word)
-            self.__remove_from_words_by_length(word)
-        if word in self.added_words:
-            self.added_words.remove(word)
+    # return words in wordlist that match the pattern of this word
+    def get_matches(self, pattern):
+        # try to get from memo
+        if pattern in self.pattern_matches:
+            return self.pattern_matches[pattern]
+
+        matches = []
+        length = len(pattern)
+        if length not in self.words_by_length:
+            return []
+        for w in self.words_by_length[length]:
+            for i in range(length):
+                if pattern[i] != EMPTY and pattern[i] != w[i]:
+                    break
+            else:
+                matches.append(w)
+        
+        # write to memo
+        self.pattern_matches[pattern] = matches
+        return matches
 
 
 # basic struct for a position in a grid where a word can go
@@ -169,41 +194,10 @@ class Crossword:
             if curr_word != '':
                 self.entries[slot] = curr_word
 
-
     # prints the whole word map, nicely formatted
     def print_words(self):
         for slot in self.entries:
             print(slot.row, slot.col, slot.dir, self.entries[slot])
-    
-    # return words in wordlist that match the pattern of this word
-    # TODO: optimize this with a trie or regex or something
-    def get_matches(self, word):
-        matches = []
-        length = len(word)
-        if length not in self.wordlist.words_by_length:
-            return []
-        for w in self.wordlist.words_by_length[length]:
-            for i in range(length):
-                if word[i] != EMPTY and word[i] != w[i]:
-                    break
-            else:
-                matches.append(w)
-        return matches
-    
-    # returns number of words in wordlist that match pattern of this word
-    # TODO: optimize this with a trie or regex or something
-    def num_matches(self, word):
-        matches = 0
-        length = len(word)
-        if length not in self.wordlist.words_by_length:
-            return 0
-        for w in self.wordlist.words_by_length[length]:
-            for i in range(length):
-                if word[i] != EMPTY and word[i] != w[i]:
-                    break
-            else:
-                matches += 1
-        return matches
 
     # finds the slot that has the fewest possible matches, this is probably the best next place to look
     def fewest_matches(self):
@@ -214,7 +208,7 @@ class Crossword:
             word = self.entries[slot]
             if self.is_filled(word):
                 continue
-            matches = self.num_matches(word)
+            matches = len(self.wordlist.get_matches(word))
             if matches < fewest_matches:
                 fewest_matches = matches
                 fewest_matches_slot = slot
@@ -275,7 +269,11 @@ class Crossword:
         
         # iterate through all possible matches in the fewest-match slot
         previous_word = self.entries[slot]
-        matches = self.get_matches(self.entries[slot])
+        matches = self.wordlist.get_matches(self.entries[slot])
+
+        # randomly shuffle matches, this miiiight be slow
+        random.shuffle(matches)
+
         for match in matches:
             if self.is_dupe(match):
                 continue
