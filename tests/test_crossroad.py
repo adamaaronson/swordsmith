@@ -7,7 +7,6 @@ from random import shuffle
 import time
 
 
-
 def xword_15x15(wordlist):
     xword = xr.Crossword(15, 15, wordlist)
     
@@ -62,10 +61,6 @@ def xword_9x9(wordlist):
     return xword
 
 
-def xword_nxn(wordlist, n):
-    return xr.Crossword(n, n, wordlist)
-
-
 words = [w.upper() for w in open('wordlist/spreadthewordlist.dict').read().splitlines()]
 words = [w.split(';') for w in words]
 words = [w[0] for w in words if int(w[1]) >= 50]
@@ -78,7 +73,7 @@ times = []
 for i in range(trials):
     tic = time.time()
 
-    xword = xword_nxn(wordlist, size)
+    xword = xword_15x15(wordlist)
     xword.fill('dfs', printout=False)
 
     duration = time.time() - tic
@@ -88,4 +83,4 @@ for i in range(trials):
     print(xword)
     print(f'Took {duration} seconds to fill {xword.cols}x{xword.rows} crossword.')
 
-print(f'Took {duration} seconds on average over {trials} crosswords.')
+print(f'Took {sum(times) / trials} seconds on average over {trials} crosswords.')
