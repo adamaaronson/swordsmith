@@ -1,15 +1,14 @@
+import sys
+# TODO: better way to properly import stuff than this. this sucks
+sys.path.append('../crossroad')
+
 import crossroad as xr
 from random import shuffle
 import time
 
-words = [w.upper() for w in open('wordlist/spreadthewordlist.dict').read().splitlines()]
-words = [w.split(';') for w in words]
-words = [w[0] for w in words if int(w[1]) >= 50]
-shuffle(words)
 
-wordlist = xr.Wordlist(words)
 
-def xword_15x15():
+def xword_15x15(wordlist):
     xword = xr.Crossword(15, 15, wordlist)
     
     blocks1 = [
@@ -46,7 +45,7 @@ def xword_15x15():
     return xword
 
 
-def xword_9x9():
+def xword_9x9(wordlist):
     xword = xr.Crossword(9, 9, wordlist)
     xword.put_block(0, 4)
     xword.put_block(1, 4)
@@ -63,16 +62,30 @@ def xword_9x9():
     return xword
 
 
-def xword_5x5():
-    return xr.Crossword(5, 5, wordlist)
+def xword_nxn(wordlist, n):
+    return xr.Crossword(n, n, wordlist)
 
 
+words = [w.upper() for w in open('wordlist/spreadthewordlist.dict').read().splitlines()]
+words = [w.split(';') for w in words]
+words = [w[0] for w in words if int(w[1]) >= 50]
+wordlist = xr.Wordlist(words)
 
-tic = time.time()
+size = 5
+trials = 5
+times = []
 
-xword = xword_5x5()
-xword.fill('dfs', printout=True)
+for i in range(trials):
+    tic = time.time()
 
-toc = time.time()
+    xword = xword_nxn(wordlist, size)
+    xword.fill('dfs', printout=False)
 
-print(f'\nTook {toc - tic} seconds to fill.')
+    duration = time.time() - tic
+
+    times.append(duration)
+
+    print(xword)
+    print(f'Took {duration} seconds to fill {xword.cols}x{xword.rows} crossword.')
+
+print(f'Took {duration} seconds on average over {trials} crosswords.')
