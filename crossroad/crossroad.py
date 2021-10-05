@@ -86,6 +86,11 @@ class Wordlist:
 # position in a grid where a word can go
 Slot = namedtuple('Slot', ['row', 'col', 'dir'])
 
+# exception for when a duplicate entry is found
+class DupeError(Exception):
+    def __init__(self, message='Dupe found!'):
+        self.message = message
+
 class Crossword:
     # fills grid of given size with empty squares
     def __init__(self, rows, cols, wordlist=None):
@@ -98,6 +103,7 @@ class Crossword:
         
         # initialize words maps
         self.entries = {}
+        self.entryset = set()
         self.across_crossings = {}
         self.down_crossings = {}
 
@@ -124,15 +130,34 @@ class Crossword:
     
     # sets character at index to given character
     def put_letter(self, slot, i, letter):
-        entry = self.entries[slot]
-        if i >= len(entry):
-            raise IndexError('tried to put a letter outside the word!')
-        self.entries[slot] = entry[0:i] + letter + entry[i+1 :]
+        old_entry = self.entries[slot]
+        if i >= len(old_entry):
+            raise IndexError('Index greater than word length!')
+
+        if old_entry[i] == letter:
+            # no change
+            return
+        
+        new_entry = old_entry[0:i] + letter + old_entry[i+1 :]
+
+        # update entryset
+        if old_entry in self.entryset:
+            self.entryset.remove(old_entry)
+        if self.is_filled(new_entry):
+            if self.is_dupe(new_entry):
+                raise DupeError()
+            self.entryset.add(new_entry)
+        
+        self.entries[slot] = new_entry
     
     # places word in given Slot
     def put_word(self, word, row=0, col=0, dir=ACROSS, add_to_wordlist=True):
         if add_to_wordlist and self.wordlist:
             self.wordlist.add_word(word)
+        
+        # check if dupe
+        if self.is_dupe(word):
+            raise DupeError()
 
         # place word in grid array
         if dir == DOWN:
@@ -142,10 +167,17 @@ class Crossword:
             for x in range(len(word)):
                 self.grid[row][col + x] = word[x]
         
-        # place word in words map
-        self.entries[Slot(row, col, dir)] = word
+        slot = Slot(row, col, dir)
+        prev_word = self.entries[slot]
+        
+        # place word in entries map and entryset
+        self.entries[slot] = word
+        if self.is_filled(prev_word):
+            self.entryset.remove(prev_word)
+        if self.is_filled(word):
+            self.entryset.add(word)
 
-        # alter crossing words in words map
+        # update crossing words
         if dir == DOWN:
             for y in range(len(word)):
                 crossing_slot = self.across_crossings[row + y, col]
@@ -246,12 +278,8 @@ class Crossword:
         return True
 
     # returns whether or not a given word is already in the grid
-    # TODO: make more efficient with word set
     def is_dupe(self, word):
-        for slot in self.entries:
-            if self.entries[slot] == word:
-                return True
-        return False
+        return word in self.entryset
     
     # fill the crossword using the given algorithm
     def fill(self, strategy, printout=False):
@@ -290,10 +318,12 @@ class Crossword:
         random.shuffle(matches)
 
         for match in matches:
-            if self.is_dupe(match):
-                continue
             # try placing the match in slot and try to solve with the match there, otherwise continue
-            self.put_word(match, slot.row, slot.col, slot.dir)
+            try:
+                self.put_word(match, slot.row, slot.col, slot.dir)
+            except DupeError:
+                continue
+
             if not self.has_valid_words():
                 continue
             if self.fill_dfs(printout=printout):
