@@ -5,6 +5,7 @@ sys.path.append('../crossroad')
 import crossroad as xr
 from random import shuffle
 import time
+import cProfile
 
 
 def xword_15x15(wordlist):
@@ -70,10 +71,12 @@ size = 5
 trials = 5
 times = []
 
+# cProfile.run("""
 for i in range(trials):
     tic = time.time()
 
-    xword = xword_15x15(wordlist)
+    xword = xr.Crossword(5, 5, wordlist)
+
     xword.fill('dfs', printout=False)
 
     duration = time.time() - tic
@@ -82,5 +85,6 @@ for i in range(trials):
 
     print(xword)
     print(f'Took {duration} seconds to fill {xword.cols}x{xword.rows} crossword.')
+# """)
 
 print(f'Took {sum(times) / trials} seconds on average over {trials} crosswords.')

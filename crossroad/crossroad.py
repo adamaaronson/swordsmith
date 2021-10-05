@@ -48,16 +48,30 @@ class Wordlist:
                 self.words_by_length[length].remove(word)
     
     # return words in wordlist that match the pattern of this word
+    # TODO: try using regex for pattern matching
+    # TODO: look into table indexing to match each character of the word, something something sqlite
     def get_matches(self, pattern):
         # try to get from memo
         if pattern in self.pattern_matches:
             return self.pattern_matches[pattern]
-
+        
         matches = []
         length = len(pattern)
         if length not in self.words_by_length:
             return []
-        for w in self.words_by_length[length]:
+        
+        # leverage a previously searched superpattern if possible,
+        # e.g. if the pattern is A??M we might have already searched for A??? or ???M
+        candidates = self.words_by_length[length]
+        for i in range(len(pattern)):
+            if pattern[i] == EMPTY:
+                continue
+            superpattern = pattern[:i] + EMPTY + pattern[i+1:]
+            if superpattern in self.pattern_matches:
+                candidates = self.pattern_matches[superpattern]
+                break
+
+        for w in candidates:
             for i in range(length):
                 if pattern[i] != EMPTY and pattern[i] != w[i]:
                     break
@@ -249,7 +263,11 @@ class Crossword:
         else:
             raise ValueError('Invalid strategy')
     
-    # fills the crossword using a naive, terrible, dfs algorithm
+    # fills the crossword using a naive dfs algorithm:
+    # - keeps selecting unfilled slot with fewest possible matches
+    # - randomly chooses matching entry for that slot
+    # - backtracks if there is a slot with no matches
+    # 
     # TODO: optimize efficiency of this before moving onto heuristic-based algorithm
     def fill_dfs(self, printout=False):
         if printout:
