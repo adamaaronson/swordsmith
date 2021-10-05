@@ -8,7 +8,7 @@ import time
 import cProfile
 
 
-def xword_15x15(wordlist):
+def xword_15x(wordlist):
     xword = xr.Crossword(15, 15, wordlist)
     
     blocks1 = [
@@ -39,13 +39,12 @@ def xword_15x15(wordlist):
 
     blocks = blocks1 + blocks2
 
-    for b in blocks:
-        xword.put_block(*b)
+    xword.put_blocks(blocks)
     
     return xword
 
 
-def xword_9x9(wordlist):
+def xword_9x(wordlist):
     xword = xr.Crossword(9, 9, wordlist)
     xword.put_block(0, 4)
     xword.put_block(1, 4)
@@ -67,16 +66,15 @@ words = [w.split(';') for w in words]
 words = [w[0] for w in words if int(w[1]) >= 50]
 wordlist = xr.Wordlist(words)
 
-size = 5
-trials = 5
+trials = 10
 times = []
 
 # cProfile.run("""
+
 for i in range(trials):
     tic = time.time()
 
-    xword = xr.Crossword(5, 5, wordlist)
-
+    xword = xword_15x(wordlist)
     xword.fill('dfs', printout=False)
 
     duration = time.time() - tic
@@ -85,6 +83,7 @@ for i in range(trials):
 
     print(xword)
     print(f'Took {duration} seconds to fill {xword.cols}x{xword.rows} crossword.')
+
 # """)
 
 print(f'Took {sum(times) / trials} seconds on average over {trials} crosswords.')

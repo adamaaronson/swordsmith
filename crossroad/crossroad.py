@@ -1,5 +1,6 @@
 import utils
 import random
+from collections import namedtuple
 
 EMPTY = '·'
 BLOCK = '█'
@@ -82,23 +83,8 @@ class Wordlist:
         self.pattern_matches[pattern] = matches
         return matches
 
-
-# basic struct for a position in a grid where a word can go
-class Slot:
-    def __init__(self, row=0, col=0, dir=ACROSS):
-        self.row = row
-        self.col = col
-        self.dir = dir
-
-    def __hash__(self):
-        return hash((self.row, self.col, self.dir))
-
-    def __eq__(self, other):
-        return (self.row, self.col, self.dir) == (other.row, other.col, other.dir)
-    
-    def __str__(self):
-        return f'[{self.row}, {self.col}]-{self.dir}'
-
+# position in a grid where a word can go
+Slot = namedtuple('Slot', ['row', 'col', 'dir'])
 
 class Crossword:
     # fills grid of given size with empty squares
@@ -130,9 +116,17 @@ class Crossword:
         self.grid[row][col] = BLOCK
         self.generate_entries()
     
+    # places list of blocks in specified slots
+    def put_blocks(self, coords):
+        for row, col in coords:
+            self.grid[row][col] = BLOCK
+        self.generate_entries()
+    
     # sets character at index to given character
     def put_letter(self, slot, i, letter):
         entry = self.entries[slot]
+        if i >= len(entry):
+            raise IndexError('tried to put a letter outside the word!')
         self.entries[slot] = entry[0:i] + letter + entry[i+1 :]
     
     # places word in given Slot
@@ -175,16 +169,18 @@ class Crossword:
             for c in range(self.cols):
                 letter = self.grid[r][c]
                 if letter != BLOCK:
-                    self.across_crossings[r, c] = slot
+                    # add a letter to the current word
                     curr_word += letter
                     if len(curr_word) == 1:
-                        slot.row = r
-                        slot.col = c
+                        slot = Slot(r, c, ACROSS)
+                    self.across_crossings[r, c] = slot
                 else:
+                    # block hit, check to see if there's a word in progress
                     if curr_word != '':
                         self.entries[slot] = curr_word
                         curr_word = ''
-                        slot = Slot(0, 0, ACROSS)
+                        slot = None
+            # last word in row
             if curr_word != '':
                 self.entries[slot] = curr_word
 
@@ -195,16 +191,18 @@ class Crossword:
             for r in range(self.rows):
                 letter = self.grid[r][c]
                 if letter != BLOCK:
-                    self.down_crossings[r, c] = slot
+                    # add a letter to the current word
                     curr_word += letter
                     if len(curr_word) == 1:
-                        slot.row = r
-                        slot.col = c
+                        slot = Slot(r, c, DOWN)
+                    self.down_crossings[r, c] = slot
                 else:
+                    # block hit, check to see if there's a word in progress
                     if curr_word != '':
                         self.entries[slot] = curr_word
                         curr_word = ''
-                        slot = Slot(0, 0, DOWN)
+                        slot = None
+            # last word in column
             if curr_word != '':
                 self.entries[slot] = curr_word
 
@@ -242,17 +240,16 @@ class Crossword:
 
     # returns whether or not the crossword is validly filled
     def has_valid_words(self):
-        for pos in self.entries:
-            w = self.entries[pos]
-            if self.is_filled(w) and w not in self.wordlist.words:
+        for word in self.entries.values():
+            if self.is_filled(word) and word not in self.wordlist.words:
                 return False
         return True
 
     # returns whether or not a given word is already in the grid
     # TODO: make more efficient with word set
     def is_dupe(self, word):
-        for pos in self.entries:
-            if self.entries[pos] == word:
+        for slot in self.entries:
+            if self.entries[slot] == word:
                 return True
         return False
     
