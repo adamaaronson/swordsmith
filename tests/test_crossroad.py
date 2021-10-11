@@ -44,6 +44,42 @@ def xword_15x(wordlist):
     return xword
 
 
+def xword_open(wordlist):
+    xword = xr.Crossword(15, 15, wordlist)
+    
+    blocks1 = [
+        (0, 6),
+        (0, 7),
+        (0, 8),
+        (1, 6),
+        (1, 7),
+        (2, 6),
+        (3, 5),
+        (4, 4),
+        (5, 3),
+        (6, 0),
+        (7, 0),
+        (7, 1),
+        (8, 0),
+        (8, 1),
+        (8, 2),
+        (9, 3),
+        (10, 4),
+        (11, 5),
+    ]
+
+    blocks2 = []
+
+    for (bx, by) in blocks1:
+        blocks2.append((14 - bx, 14 - by))
+
+    blocks = blocks1 + blocks2
+
+    xword.put_blocks(blocks)
+    
+    return xword
+
+
 def xword_9x(wordlist):
     xword = xr.Crossword(9, 9, wordlist)
     xword.put_block(0, 4)
@@ -66,7 +102,7 @@ words = [w.split(';') for w in words]
 words = [w[0] for w in words if int(w[1]) >= 50]
 wordlist = xr.Wordlist(words)
 
-trials = 10
+trials = 1
 times = []
 
 # cProfile.run("""
@@ -74,7 +110,7 @@ times = []
 for i in range(trials):
     tic = time.time()
 
-    xword = xword_15x(wordlist)
+    xword = xword_open(wordlist)
     xword.fill('dfs', printout=False)
 
     duration = time.time() - tic
@@ -82,6 +118,7 @@ for i in range(trials):
     times.append(duration)
 
     print(xword)
+    # print(len(xword.entryset), len(xword.entries))
     print(f'Took {duration} seconds to fill {xword.cols}x{xword.rows} crossword.')
 
 # """)
