@@ -2,7 +2,7 @@ import utils
 import random
 from collections import namedtuple
 
-EMPTY = '·'
+EMPTY = '.'
 BLOCK = '█'
 
 ACROSS = 'A'
@@ -71,7 +71,8 @@ class Wordlist:
             if superpattern in self.pattern_matches:
                 candidates = self.pattern_matches[superpattern]
                 break
-
+        
+        regex = '^' + pattern + '$'
         for w in candidates:
             for i in range(length):
                 if pattern[i] != EMPTY and pattern[i] != w[i]:
@@ -108,11 +109,24 @@ class Crossword:
         self.down_crossings = {}
 
         self.generate_entries()
-
+    
     # prints crossword
     def __str__(self):
         return '\n'.join([' '.join([letter for letter in row]) for row in self.grid])
     
+    # takes in boolean array and returns a crossword where True = block and False = empty
+    @classmethod
+    def from_grid(cls, grid, wordlist=None):
+        rows = len(grid)
+        cols = len(grid[0])
+
+        blocks = sum([[(r, c) for c in range(cols) if grid[r][c]] for r in range(rows)], [])
+
+        xw = cls(rows, cols, wordlist)
+        xw.put_blocks(blocks)
+
+        return xw
+
     # returns whether given grid Slot contains a letter
     def is_letter(self, row, col):
         return self.grid[row][col] != EMPTY and self.grid[row][col] != BLOCK
@@ -292,8 +306,6 @@ class Crossword:
     # - keeps selecting unfilled slot with fewest possible matches
     # - randomly chooses matching entry for that slot
     # - backtracks if there is a slot with no matches
-    # 
-    # TODO: optimize efficiency of this before moving onto heuristic-based algorithm
     def fill_dfs(self, printout=False):
         if printout:
             utils.clear_terminal()

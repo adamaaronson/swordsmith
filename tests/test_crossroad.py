@@ -9,92 +9,63 @@ import cProfile
 
 
 def xword_15x(wordlist):
-    xword = xr.Crossword(15, 15, wordlist)
-    
-    blocks1 = [
-        (0, 5),
-        (1, 5),
-        (0, 11),
-        (1, 11),
-        (2, 11),
-        (3, 0),
-        (3, 1),
-        (3, 2),
-        (3, 3),
-        (3, 8),
-        (3, 9),
-        (4, 7),
-        (5, 6),
-        (6, 5),
-        (7, 4),
-        (8, 3),
-        (9, 0),
-        (9, 1)
+    grid = [
+        [0,0,0,0,0,1,0,0,0,0,0,1,0,0,0],
+        [0,0,0,0,0,1,0,0,0,0,0,1,0,0,0],
+        [0,0,0,0,0,0,0,0,0,0,0,1,0,0,0],
+        [1,1,1,1,0,0,0,0,1,1,0,0,0,0,0],
+        [0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,1,0,0,0,0,0,0,1,1],
+        [0,0,0,0,0,1,0,0,0,0,0,1,0,0,0],
+        [0,0,0,0,1,0,0,0,0,0,1,0,0,0,0],
+        [0,0,0,1,0,0,0,0,0,1,0,0,0,0,0],
+        [1,1,0,0,0,0,0,0,1,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+        [0,0,0,0,0,1,1,0,0,0,0,1,1,1,1],
+        [0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],
+        [0,0,0,1,0,0,0,0,0,1,0,0,0,0,0],
+        [0,0,0,1,0,0,0,0,0,1,0,0,0,0,0]
     ]
-
-    blocks2 = []
-
-    for (bx, by) in blocks1:
-        blocks2.append((14 - bx, 14 - by))
-
-    blocks = blocks1 + blocks2
-
-    xword.put_blocks(blocks)
     
-    return xword
+    return xr.Crossword.from_grid(grid, wordlist)
 
 
 def xword_open(wordlist):
-    xword = xr.Crossword(15, 15, wordlist)
-    
-    blocks1 = [
-        (0, 6),
-        (0, 7),
-        (0, 8),
-        (1, 6),
-        (1, 7),
-        (2, 6),
-        (3, 5),
-        (4, 4),
-        (5, 3),
-        (6, 0),
-        (7, 0),
-        (7, 1),
-        (8, 0),
-        (8, 1),
-        (8, 2),
-        (9, 3),
-        (10, 4),
-        (11, 5),
+    grid = [
+        [0,0,0,0,0,0,1,1,1,0,0,0,0,0,0],
+        [0,0,0,0,0,0,1,1,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,1,0,0,0,1,0,0,0,0,0],
+        [0,0,0,0,1,0,0,0,0,0,1,0,0,0,0],
+        [0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
+        [1,0,0,0,0,0,0,0,0,0,0,0,1,1,1],
+        [1,1,0,0,0,0,0,0,0,0,0,0,0,1,1],
+        [1,1,1,0,0,0,0,0,0,0,0,0,0,0,1],
+        [0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
+        [0,0,0,0,1,0,0,0,0,0,1,0,0,0,0],
+        [0,0,0,0,0,1,0,0,0,1,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,1,1,0,0,0,0,0,0],
+        [0,0,0,0,0,0,1,1,1,0,0,0,0,0,0]
     ]
 
-    blocks2 = []
-
-    for (bx, by) in blocks1:
-        blocks2.append((14 - bx, 14 - by))
-
-    blocks = blocks1 + blocks2
-
-    xword.put_blocks(blocks)
-    
-    return xword
+    return xr.Crossword.from_grid(grid, wordlist)
 
 
 def xword_9x(wordlist):
-    xword = xr.Crossword(9, 9, wordlist)
-    xword.put_block(0, 4)
-    xword.put_block(1, 4)
-    xword.put_block(2, 4)
-    xword.put_block(6, 4)
-    xword.put_block(7, 4)
-    xword.put_block(8, 4)
-    xword.put_block(4, 0)
-    xword.put_block(4, 1)
-    xword.put_block(4, 2)
-    xword.put_block(4, 6)
-    xword.put_block(4, 7)
-    xword.put_block(4, 8)
-    return xword
+    grid = [
+        [0,0,0,0,1,0,0,0,0],
+        [0,0,0,0,1,0,0,0,0],
+        [0,0,0,0,1,0,0,0,0],
+        [0,0,0,0,0,0,0,0,0],
+        [1,1,1,0,0,0,1,1,1],
+        [0,0,0,0,0,0,0,0,0],
+        [0,0,0,0,1,0,0,0,0],
+        [0,0,0,0,1,0,0,0,0],
+        [0,0,0,0,1,0,0,0,0]
+    ]
+
+    return xr.Crossword.from_grid(grid, wordlist)
 
 
 words = [w.upper() for w in open('wordlist/spreadthewordlist.dict').read().splitlines()]
@@ -111,14 +82,13 @@ for i in range(trials):
     tic = time.time()
 
     xword = xword_open(wordlist)
-    xword.fill('dfs', printout=False)
+    xword.fill('dfs', printout=True)
 
     duration = time.time() - tic
 
     times.append(duration)
 
     print(xword)
-    # print(len(xword.entryset), len(xword.entries))
     print(f'Took {duration} seconds to fill {xword.cols}x{xword.rows} crossword.')
 
 # """)
