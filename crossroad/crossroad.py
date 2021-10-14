@@ -49,7 +49,6 @@ class Wordlist:
                 self.words_by_length[length].remove(word)
     
     # return words in wordlist that match the pattern of this word
-    # TODO: try using regex for pattern matching
     # TODO: look into table indexing to match each character of the word, something something sqlite
     def get_matches(self, pattern):
         # try to get from memo
@@ -72,7 +71,6 @@ class Wordlist:
                 candidates = self.pattern_matches[superpattern]
                 break
         
-        regex = '^' + pattern + '$'
         for w in candidates:
             for i in range(length):
                 if pattern[i] != EMPTY and pattern[i] != w[i]:
