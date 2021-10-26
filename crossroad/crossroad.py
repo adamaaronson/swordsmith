@@ -1,6 +1,7 @@
 import utils
 import random
-from collections import namedtuple
+import math
+from collections import namedtuple, defaultdict
 
 EMPTY = '.'
 BLOCK = '█'
@@ -83,6 +84,7 @@ class Wordlist:
         return matches
 
 # position in a grid where a word can go
+Square = namedtuple('Square', ['row', 'col'])
 Slot = namedtuple('Slot', ['row', 'col', 'dir'])
 
 # exception for when a duplicate entry is found
@@ -97,16 +99,18 @@ class Crossword:
         self.cols = cols
         self.wordlist = wordlist
         
-        # initalize grid array
-        self.grid = [[EMPTY for c in range(cols)] for r in range(rows)]
+        self.grid = [[EMPTY for c in range(cols)] for r in range(rows)] # 2D array of squares
         
-        # initialize words maps
-        self.entries = {}
-        self.entryset = set()
-        self.across_crossings = {}
-        self.down_crossings = {}
+        self.entries = {}               # slot => entry it contains
+        self.entryset = set()           # set of filled entries in puzzle
 
-        self.generate_entries()
+        self.across_slots = {}          # square => across slot that contains it
+        self.down_slots = {}            # square => down slot that contains it
+        
+        self.squares_in_slot = defaultdict(list)         # slot => list of squares it contains     
+        self.slots_crossing_slot = defaultdict(set)      # slot => set of slots it crosses
+
+        self.generate_slots()
     
     # prints crossword
     def __str__(self):
@@ -132,16 +136,16 @@ class Crossword:
     # places block in certain slot
     def put_block(self, row, col):
         self.grid[row][col] = BLOCK
-        self.generate_entries()
+        self.generate_slots()
     
     # places list of blocks in specified slots
     def put_blocks(self, coords):
         for row, col in coords:
             self.grid[row][col] = BLOCK
-        self.generate_entries()
+        self.generate_slots()
     
     # sets character at index to given character
-    def put_letter(self, slot, i, letter):
+    def put_letter(self, slot, i, letter, tentative=False):
         old_entry = self.entries[slot]
         if i >= len(old_entry):
             raise IndexError('Index greater than word length!')
@@ -153,22 +157,23 @@ class Crossword:
         new_entry = old_entry[0:i] + letter + old_entry[i+1 :]
 
         # update entryset
-        if old_entry in self.entryset:
-            self.entryset.remove(old_entry)
-        if self.is_filled(new_entry):
-            if self.is_dupe(new_entry):
-                raise DupeError()
-            self.entryset.add(new_entry)
+        if not tentative:
+            if old_entry in self.entryset:
+                self.entryset.remove(old_entry)
+            if self.is_filled(new_entry):
+                if self.is_dupe(new_entry):
+                    raise DupeError()
+                self.entryset.add(new_entry)
         
         self.entries[slot] = new_entry
     
     # places word in given Slot
-    def put_word(self, word, row=0, col=0, dir=ACROSS, add_to_wordlist=True):
-        if add_to_wordlist and self.wordlist:
+    def put_word(self, word, row=0, col=0, dir=ACROSS, add_to_wordlist=True, tentative=False):
+        if not tentative and add_to_wordlist and self.wordlist:
             self.wordlist.add_word(word)
         
         # check if dupe
-        if self.is_dupe(word):
+        if not tentative and self.is_dupe(word):
             raise DupeError()
 
         # place word in grid array
@@ -183,28 +188,31 @@ class Crossword:
         prev_word = self.entries[slot]
         
         # place word in entries map and entryset
-        self.entries[slot] = word
-        if self.is_filled(prev_word):
-            self.entryset.remove(prev_word)
-        if self.is_filled(word):
-            self.entryset.add(word)
+        if not tentative:
+            self.entries[slot] = word
+            if self.is_filled(prev_word):
+                self.entryset.remove(prev_word)
+            if self.is_filled(word):
+                self.entryset.add(word)
 
         # update crossing words
         if dir == DOWN:
             for y in range(len(word)):
-                crossing_slot = self.across_crossings[row + y, col]
-                self.put_letter(crossing_slot, col - crossing_slot.col, word[y])
+                crossing_slot = self.across_slots[row + y, col]
+                self.put_letter(crossing_slot, col - crossing_slot.col, word[y], tentative)
         else:
             for x in range(len(word)):
-                crossing_slot = self.down_crossings[row, col + x]
-                self.put_letter(crossing_slot, row - crossing_slot.row, word[x])
+                crossing_slot = self.down_slots[row, col + x]
+                self.put_letter(crossing_slot, row - crossing_slot.row, word[x], tentative)
 
     # generates dictionary that maps Slot to word
-    def generate_entries(self):
-        # reset words map
-        self.entries = {}
-        self.across_crossings = {}
-        self.down_crossings = {}
+    def generate_slots(self):
+        # reset slot mappings
+        self.entries.clear()
+        self.across_slots.clear()
+        self.down_slots.clear()
+        self.squares_in_slot.clear()
+        self.slots_crossing_slot.clear()
 
         # generate across words
         for r in range(self.rows):
@@ -217,7 +225,8 @@ class Crossword:
                     curr_word += letter
                     if len(curr_word) == 1:
                         slot = Slot(r, c, ACROSS)
-                    self.across_crossings[r, c] = slot
+                    self.across_slots[r, c] = slot
+                    self.squares_in_slot[slot].append((r, c))
                 else:
                     # block hit, check to see if there's a word in progress
                     if curr_word != '':
@@ -239,7 +248,8 @@ class Crossword:
                     curr_word += letter
                     if len(curr_word) == 1:
                         slot = Slot(r, c, DOWN)
-                    self.down_crossings[r, c] = slot
+                    self.down_slots[r, c] = slot
+                    self.squares_in_slot[slot].append((r, c))
                 else:
                     # block hit, check to see if there's a word in progress
                     if curr_word != '':
@@ -249,6 +259,14 @@ class Crossword:
             # last word in column
             if curr_word != '':
                 self.entries[slot] = curr_word
+        
+        # determine crossing slots
+        for square in self.across_slots:
+            if square in self.down_slots:
+                across_slot = self.across_slots[square]
+                down_slot = self.down_slots[square]
+                self.slots_crossing_slot[across_slot].add(down_slot)
+                self.slots_crossing_slot[down_slot].add(across_slot)
 
     # prints the whole word map, nicely formatted
     def print_words(self):
@@ -297,6 +315,8 @@ class Crossword:
     def fill(self, strategy, printout=False):
         if strategy == 'dfs':
             self.fill_dfs(printout)
+        elif strategy == 'minlook':
+            self.fill_minlook(k=10, printout=printout)
         else:
             raise ValueError('Invalid strategy')
     
@@ -330,7 +350,7 @@ class Crossword:
         for match in matches:
             # try placing the match in slot and try to solve with the match there, otherwise continue
             try:
-                self.put_word(match, slot.row, slot.col, slot.dir)
+                self.put_word(match, *slot)
             except DupeError:
                 continue
 
@@ -339,5 +359,94 @@ class Crossword:
             if self.fill_dfs(printout=printout):
                 return True
         # if no match works, restore previous word
-        self.put_word(previous_word, slot.row, slot.col, slot.dir, add_to_wordlist=False)
+        self.put_word(previous_word, *slot, add_to_wordlist=False)
+        return False
+    
+    # considers given matches, returns the one that offers the most possible crossing entries
+    # if none of them work, return None
+    def minlook(self, slot, matches):
+        crossings = self.slots_crossing_slot[slot]
+        prev_word = self.entries[slot]
+
+        best_match = None
+        best_cross_product = 0
+
+        for match in matches:
+            try:
+                self.put_word(match, *slot, tentative=True)
+            except DupeError:
+                continue
+
+            cross_product = 0
+
+            for crossing_slot in crossings:
+                crossing_entry = self.entries[crossing_slot]
+                num_matches = len(self.wordlist.get_matches(crossing_entry))
+                
+                # if no matches for some crossing slot, give up and move on
+                # this is basically "arc-consistency lookahead"
+                if num_matches == 0:
+                    cross_product = float('-inf')
+                    break
+                
+                # use log product to avoid explosions
+                cross_product += math.log(num_matches)
+            
+            # print(match, cross_product)
+            if cross_product > best_cross_product:
+                best_match = match
+                best_cross_product = cross_product
+        
+        # restore previous word
+        self.put_word(prev_word, *slot, tentative=True)
+
+        return best_match
+            
+
+    
+    # fills the crossword using a dfs algorithm with minlook heuristic:
+    # - keeps selecting unfilled slot with fewest possible matches
+    # - considers k random matching word, chooses word with the most possible crossing entries (product of # in each slot)
+    # - backtracks if there is a slot with no matches
+    def fill_minlook(self, k, printout=False):
+        if printout:
+            utils.clear_terminal()
+            print(self)
+
+        # choose slot with fewest matches
+        slot, num_matches = self.fewest_matches()
+
+        # if some slot has zero matches, fail
+        if num_matches == 0:
+            return False
+
+        # if the grid is filled, succeed if every word is valid and otherwise fail
+        if self.is_grid_filled():
+            return self.has_valid_words()
+        
+        # iterate through all possible matches in the fewest-match slot
+        previous_word = self.entries[slot]
+        matches = self.wordlist.get_matches(self.entries[slot])
+
+        while matches:
+            random.shuffle(matches)
+            match = self.minlook(slot, matches[:k])
+
+            if match:
+                matches.remove(match)
+            else:
+                matches = matches[k:]
+                continue
+
+            try:
+                self.put_word(match, *slot)
+            except DupeError:
+                continue
+
+            if not self.has_valid_words():
+                continue
+            if self.fill_minlook(k, printout):
+                return True
+        # if no match works, restore previous word
+        self.put_word(previous_word, *slot, add_to_wordlist=False)
         return False
