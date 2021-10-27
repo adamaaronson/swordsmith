@@ -81,14 +81,24 @@ def xword_7x(wordlist):
 
     return xr.Crossword.from_grid(grid, wordlist)
 
+def xword_4x(wordlist):
+    grid = [
+        [0,0,0,0],
+        [0,0,0,0],
+        [0,0,0,0],
+        [0,0,0,0],
+    ]
+
+    return xr.Crossword.from_grid(grid, wordlist)
+
 
 words = [w.upper() for w in open('wordlist/spreadthewordlist.dict').read().splitlines()]
 words = [w.split(';') for w in words]
 words = [w[0] for w in words if int(w[1]) >= 50]
 wordlist = xr.Wordlist(words)
 
-trials = 10
-animate = True
+trials = 1
+animate = False
 strategy = 'minlook'
 
 times = []
@@ -98,9 +108,9 @@ times = []
 for i in range(trials):
     tic = time.time()
 
-    xword = xword_9x(wordlist)
+    xword = xr.Crossword(5, 5, wordlist)
 
-    xword.fill(strategy=strategy, k=5, printout=animate)
+    xword.fill(strategy=strategy, k=10, printout=animate)
 
     duration = time.time() - tic
 

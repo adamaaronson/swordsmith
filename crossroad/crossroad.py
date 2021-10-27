@@ -320,7 +320,7 @@ class Crossword:
         for i, square in enumerate(self.squares_in_slot[slot]):
             letter = word[i]
 
-            if dir == DOWN:
+            if slot.dir == DOWN:
                 crossing_slot = self.across_slots[square]
                 index = slot.col - crossing_slot.col
             else:
@@ -389,11 +389,11 @@ class Crossword:
     # considers given matches, returns index of the one that offers the most possible crossing entries
     # if none of them work, return -1
     def minlook(self, slot, k, matches):
-        match_indices = random.sample(range(len(matches)), min(k, len(matches)))
+        match_indices = range(min(k, len(matches))) # just take first k matches
         failed_indices = set()
 
         best_match_index = -1
-        best_cross_product = 0
+        best_cross_product = -1
 
         for match_index in match_indices:
             cross_product = 0
@@ -411,7 +411,6 @@ class Crossword:
                 # use log product to avoid explosions
                 cross_product += math.log(num_matches)
             
-            # print(match, cross_product)
             if cross_product > best_cross_product:
                 best_match_index = match_index
                 best_cross_product = cross_product
@@ -443,26 +442,26 @@ class Crossword:
         previous_word = self.entries[slot]
         matches = self.wordlist.get_matches(self.entries[slot])
 
+        # randomly shuffle matches, this miiiight be slow
+        random.shuffle(matches)
+
         while matches:
             match_index, failed_indices = self.minlook(slot, k, matches)
 
             if match_index != -1:
                 match = matches[match_index]
             
-            # remove failed matches
-            matches = [matches[i] for i in range(len(matches)) if i not in failed_indices]
-
+            # remove failed matches and chosen match
+            matches = [matches[i] for i in range(len(matches)) if i != match_index and i not in failed_indices]
+            
+            # if no matches were found, try another batch if possible
             if match_index == -1:
-                if len(matches) + len(failed_indices) <= k:
-                    break
-                else:
-                    continue
+                continue
 
             # try placing the match in slot and try to solve with the match there, otherwise continue
             try:
                 self.put_word(match, *slot)
             except DupeError:
-                matches.remove(match)
                 continue
 
             if not self.has_valid_words():
