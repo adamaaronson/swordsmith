@@ -87,7 +87,7 @@ words = [w.split(';') for w in words]
 words = [w[0] for w in words if int(w[1]) >= 50]
 wordlist = xr.Wordlist(words)
 
-trials = 1
+trials = 10
 animate = True
 strategy = 'minlook'
 
@@ -98,10 +98,9 @@ times = []
 for i in range(trials):
     tic = time.time()
 
-    xword = xword_15x(wordlist)
+    xword = xword_9x(wordlist)
 
-    xword.fill(strategy=strategy, printout=animate)
-    print(len(xword.entryset))
+    xword.fill(strategy=strategy, k=5, printout=animate)
 
     duration = time.time() - tic
 

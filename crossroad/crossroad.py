@@ -145,7 +145,7 @@ class Crossword:
         self.generate_slots()
     
     # sets character at index to given character
-    def put_letter(self, slot, i, letter, tentative=False):
+    def put_letter(self, slot, i, letter):
         old_entry = self.entries[slot]
         if i >= len(old_entry):
             raise IndexError('Index greater than word length!')
@@ -157,23 +157,22 @@ class Crossword:
         new_entry = old_entry[0:i] + letter + old_entry[i+1 :]
 
         # update entryset
-        if not tentative:
-            if old_entry in self.entryset:
-                self.entryset.remove(old_entry)
-            if self.is_filled(new_entry):
-                if self.is_dupe(new_entry):
-                    raise DupeError()
-                self.entryset.add(new_entry)
+        if old_entry in self.entryset:
+            self.entryset.remove(old_entry)
+        if self.is_filled(new_entry):
+            if self.is_dupe(new_entry):
+                raise DupeError()
+            self.entryset.add(new_entry)
         
         self.entries[slot] = new_entry
     
     # places word in given Slot
-    def put_word(self, word, row=0, col=0, dir=ACROSS, add_to_wordlist=True, tentative=False):
-        if not tentative and add_to_wordlist and self.wordlist:
+    def put_word(self, word, row=0, col=0, dir=ACROSS, add_to_wordlist=True):
+        if add_to_wordlist and self.wordlist:
             self.wordlist.add_word(word)
         
         # check if dupe
-        if not tentative and self.is_dupe(word):
+        if self.is_dupe(word):
             raise DupeError()
 
         # place word in grid array
@@ -188,22 +187,22 @@ class Crossword:
         prev_word = self.entries[slot]
         
         # place word in entries map and entryset
-        if not tentative:
-            self.entries[slot] = word
-            if self.is_filled(prev_word):
-                self.entryset.remove(prev_word)
-            if self.is_filled(word):
-                self.entryset.add(word)
-
+        self.entries[slot] = word
+        if self.is_filled(prev_word):
+            self.entryset.remove(prev_word)
+        if self.is_filled(word):
+            self.entryset.add(word)
+        
         # update crossing words
-        if dir == DOWN:
-            for y in range(len(word)):
-                crossing_slot = self.across_slots[row + y, col]
-                self.put_letter(crossing_slot, col - crossing_slot.col, word[y], tentative)
-        else:
-            for x in range(len(word)):
-                crossing_slot = self.down_slots[row, col + x]
-                self.put_letter(crossing_slot, row - crossing_slot.row, word[x], tentative)
+        for square in self.squares_in_slot[slot]:
+            square_row, square_col = square
+            if dir == DOWN:
+                crossing_slot = self.across_slots[square]
+                self.put_letter(crossing_slot, col - crossing_slot.col, self.grid[square_row][square_col])
+            else:
+                crossing_slot = self.down_slots[square]
+                self.put_letter(crossing_slot, row - crossing_slot.row, self.grid[square_row][square_col])
+                
 
     # generates dictionary that maps Slot to word
     def generate_slots(self):
@@ -310,13 +309,38 @@ class Crossword:
     # returns whether or not a given word is already in the grid
     def is_dupe(self, word):
         return word in self.entryset
+
+    # returns list of entries that cross the given slot, optionally given a word to theoretically be in the slot
+    def get_crossing_entries(self, slot, word=None):
+        if not word:
+            word = self.entries[slot]
+        
+        crossing_entries = []
+
+        for i, square in enumerate(self.squares_in_slot[slot]):
+            letter = word[i]
+
+            if dir == DOWN:
+                crossing_slot = self.across_slots[square]
+                index = slot.col - crossing_slot.col
+            else:
+                crossing_slot = self.down_slots[square]
+                index = slot.row - crossing_slot.row
+            
+            crossing_entry = self.entries[crossing_slot]
+            crossing_entry = crossing_entry[:index] + letter + crossing_entry[index + 1:]
+
+            crossing_entries.append(crossing_entry)
+        
+        return crossing_entries
+
     
     # fill the crossword using the given algorithm
-    def fill(self, strategy, printout=False):
+    def fill(self, strategy, k=10, printout=False):
         if strategy == 'dfs':
             self.fill_dfs(printout)
         elif strategy == 'minlook':
-            self.fill_minlook(k=10, printout=printout)
+            self.fill_minlook(k, printout=printout)
         else:
             raise ValueError('Invalid strategy')
     
@@ -362,30 +386,25 @@ class Crossword:
         self.put_word(previous_word, *slot, add_to_wordlist=False)
         return False
     
-    # considers given matches, returns the one that offers the most possible crossing entries
-    # if none of them work, return None
-    def minlook(self, slot, matches):
-        crossings = self.slots_crossing_slot[slot]
-        prev_word = self.entries[slot]
+    # considers given matches, returns index of the one that offers the most possible crossing entries
+    # if none of them work, return -1
+    def minlook(self, slot, k, matches):
+        match_indices = random.sample(range(len(matches)), min(k, len(matches)))
+        failed_indices = set()
 
-        best_match = None
+        best_match_index = -1
         best_cross_product = 0
 
-        for match in matches:
-            try:
-                self.put_word(match, *slot, tentative=True)
-            except DupeError:
-                continue
-
+        for match_index in match_indices:
             cross_product = 0
 
-            for crossing_slot in crossings:
-                crossing_entry = self.entries[crossing_slot]
+            for crossing_entry in self.get_crossing_entries(slot, matches[match_index]):
                 num_matches = len(self.wordlist.get_matches(crossing_entry))
                 
                 # if no matches for some crossing slot, give up and move on
                 # this is basically "arc-consistency lookahead"
                 if num_matches == 0:
+                    failed_indices.add(match_index)
                     cross_product = float('-inf')
                     break
                 
@@ -394,14 +413,10 @@ class Crossword:
             
             # print(match, cross_product)
             if cross_product > best_cross_product:
-                best_match = match
+                best_match_index = match_index
                 best_cross_product = cross_product
         
-        # restore previous word
-        self.put_word(prev_word, *slot, tentative=True)
-
-        return best_match
-            
+        return best_match_index, failed_indices
 
     
     # fills the crossword using a dfs algorithm with minlook heuristic:
@@ -429,18 +444,25 @@ class Crossword:
         matches = self.wordlist.get_matches(self.entries[slot])
 
         while matches:
-            random.shuffle(matches)
-            match = self.minlook(slot, matches[:k])
+            match_index, failed_indices = self.minlook(slot, k, matches)
 
-            if match:
-                matches.remove(match)
-            else:
-                matches = matches[k:]
-                continue
+            if match_index != -1:
+                match = matches[match_index]
+            
+            # remove failed matches
+            matches = [matches[i] for i in range(len(matches)) if i not in failed_indices]
 
+            if match_index == -1:
+                if len(matches) + len(failed_indices) <= k:
+                    break
+                else:
+                    continue
+
+            # try placing the match in slot and try to solve with the match there, otherwise continue
             try:
                 self.put_word(match, *slot)
             except DupeError:
+                matches.remove(match)
                 continue
 
             if not self.has_valid_words():
