@@ -92,6 +92,11 @@ class DupeError(Exception):
     def __init__(self, message='Dupe found!'):
         self.message = message
 
+# exception for when an invalid word is created
+class BadWordError(Exception):
+    def __init__(self, message='Not a word!'):
+        self.message = message
+
 class Crossword:
     # fills grid of given size with empty squares
     def __init__(self, rows, cols, wordlist=None):
@@ -202,6 +207,12 @@ class Crossword:
             else:
                 crossing_slot = self.down_slots[square]
                 self.put_letter(crossing_slot, row - crossing_slot.row, self.grid[square_row][square_col])
+            
+            # check to see if it created an invalid crossing word
+            crossing_word = self.entries[crossing_slot]
+            
+            if self.is_filled(crossing_word) and crossing_word not in self.wordlist.words:
+                raise BadWordError()
                 
 
     # generates dictionary that maps Slot to word
@@ -375,11 +386,9 @@ class Crossword:
             # try placing the match in slot and try to solve with the match there, otherwise continue
             try:
                 self.put_word(match, *slot)
-            except DupeError:
+            except (DupeError, BadWordError):
                 continue
 
-            if not self.has_valid_words():
-                continue
             if self.fill_dfs(printout=printout):
                 return True
         # if no match works, restore previous word
@@ -461,11 +470,9 @@ class Crossword:
             # try placing the match in slot and try to solve with the match there, otherwise continue
             try:
                 self.put_word(match, *slot)
-            except DupeError:
+            except (DupeError, BadWordError):
                 continue
-
-            if not self.has_valid_words():
-                continue
+            
             if self.fill_minlook(k, printout):
                 return True
         # if no match works, restore previous word
