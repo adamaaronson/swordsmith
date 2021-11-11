@@ -58,7 +58,7 @@ def run_test(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='ye olde crossroad test suite')
     
-    parser.add_argument('-w', '--wordlist', dest='wordlist_path', type=str, help='filepath for wordlist')
+    parser.add_argument('-w', '--wordlist', dest='wordlist_path', type=str, default='wordlist/spreadthewordlist.dict', help='filepath for wordlist')
     parser.add_argument('-g', '--grid', dest='grid_path', type=str, help='filepath for grid')
     parser.add_argument('-t', '--num_trials', dest='num_trials', type=int, default=5, help='number of grids to try filling')
     parser.add_argument('-a', '--animate', dest='animate', type=bool, default=False, help='whether to animate grid filling')
@@ -67,6 +67,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     if not args.wordlist_path or not args.grid_path:
-        sys.exit('You must specify wordlist path and grid path!')
+        sys.exit('You must specify grid path!')
     
     run_test(args)
