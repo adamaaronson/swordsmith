@@ -1,127 +1,72 @@
 import sys
+import argparse
+import time
+
 # TODO: better way to properly import stuff than this. this sucks
 sys.path.append('../crossroad')
 
 import crossroad as xr
-from random import shuffle
-import time
-import cProfile
 
 
-def xword_15x(wordlist):
-    grid = [
-        [0,0,0,0,0,1,0,0,0,0,0,1,0,0,0],
-        [0,0,0,0,0,1,0,0,0,0,0,1,0,0,0],
-        [0,0,0,0,0,0,0,0,0,0,0,1,0,0,0],
-        [1,1,1,1,0,0,0,0,1,1,0,0,0,0,0],
-        [0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,1,0,0,0,0,0,0,1,1],
-        [0,0,0,0,0,1,0,0,0,0,0,1,0,0,0],
-        [0,0,0,0,1,0,0,0,0,0,1,0,0,0,0],
-        [0,0,0,1,0,0,0,0,0,1,0,0,0,0,0],
-        [1,1,0,0,0,0,0,0,1,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
-        [0,0,0,0,0,1,1,0,0,0,0,1,1,1,1],
-        [0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],
-        [0,0,0,1,0,0,0,0,0,1,0,0,0,0,0],
-        [0,0,0,1,0,0,0,0,0,1,0,0,0,0,0]
-    ]
+def read_grid(filepath, block='#'):
+    grid = open(filepath).read().splitlines()
+    grid = [[1 if char == block else 0 for char in line] for line in grid]
+    return grid
+
+
+def read_wordlist(filepath, scored=True, min_score=50):
+    words = open(filepath).read().splitlines()
+
+    words = [w.upper() for w in words]
+
+    if scored:
+        words = [w.split(';') for w in words]
+        words = [w[0] for w in words if int(w[1]) >= min_score]
     
-    return xr.Crossword.from_grid(grid, wordlist)
+    return xr.Wordlist(words)
 
 
-def xword_open(wordlist):
-    grid = [
-        [0,0,0,0,0,0,1,1,1,0,0,0,0,0,0],
-        [0,0,0,0,0,0,1,1,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,1,0,0,0,1,0,0,0,0,0],
-        [0,0,0,0,1,0,0,0,0,0,1,0,0,0,0],
-        [0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
-        [1,0,0,0,0,0,0,0,0,0,0,0,1,1,1],
-        [1,1,0,0,0,0,0,0,0,0,0,0,0,1,1],
-        [1,1,1,0,0,0,0,0,0,0,0,0,0,0,1],
-        [0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
-        [0,0,0,0,1,0,0,0,0,0,1,0,0,0,0],
-        [0,0,0,0,0,1,0,0,0,1,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,1,1,0,0,0,0,0,0],
-        [0,0,0,0,0,0,1,1,1,0,0,0,0,0,0]
-    ]
-
-    return xr.Crossword.from_grid(grid, wordlist)
+def log_times(times):
+    print(f'Took {sum(times) / len(times)} seconds on average over {len(times)} crosswords.')
+    print(f'Min time: {min(times)} seconds')
+    print(f'Max time: {max(times)} seconds')
 
 
-def xword_9x(wordlist):
-    grid = [
-        [0,0,0,0,1,0,0,0,0],
-        [0,0,0,0,1,0,0,0,0],
-        [0,0,0,0,1,0,0,0,0],
-        [0,0,0,0,0,0,0,0,0],
-        [1,1,1,0,0,0,1,1,1],
-        [0,0,0,0,0,0,0,0,0],
-        [0,0,0,0,1,0,0,0,0],
-        [0,0,0,0,1,0,0,0,0],
-        [0,0,0,0,1,0,0,0,0]
-    ]
+def run_test(args):
+    wordlist = read_wordlist(args.wordlist_path)
+    grid = read_grid(args.grid_path)
+    times = []
 
-    return xr.Crossword.from_grid(grid, wordlist)
+    for i in range(args.num_trials):
+        tic = time.time()
 
+        xword = xr.Crossword.from_grid(grid, wordlist)
+        xword.fill(strategy=args.strategy, k=5, printout=args.animate)
 
-def xword_7x(wordlist):
-    grid = [
-        [0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0],
-        [0,0,0,1,0,0,0],
-        [0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0]
-    ]
+        duration = time.time() - tic
 
-    return xr.Crossword.from_grid(grid, wordlist)
+        times.append(duration)
 
-def xword_4x(wordlist):
-    grid = [
-        [0,0,0,0],
-        [0,0,0,0],
-        [0,0,0,0],
-        [0,0,0,0],
-    ]
-
-    return xr.Crossword.from_grid(grid, wordlist)
+        if not args.animate:
+            print(xword)
+        
+        print(f'Took {duration} seconds to fill {xword.cols}x{xword.rows} crossword.')
+    
+    log_times(times)
 
 
-words = [w.upper() for w in open('wordlist/spreadthewordlist.dict').read().splitlines()]
-words = [w.split(';') for w in words]
-words = [w[0] for w in words if int(w[1]) >= 50]
-wordlist = xr.Wordlist(words)
-
-trials = 1
-animate = False
-strategy = 'minlook'
-
-times = []
-
-# cProfile.run("""
-
-for i in range(trials):
-    tic = time.time()
-
-    xword = xr.Crossword(5, 5, wordlist)
-
-    xword.fill(strategy=strategy, k=10, printout=animate)
-
-    duration = time.time() - tic
-
-    times.append(duration)
-
-    if not animate:
-        print(xword)
-    print(f'Took {duration} seconds to fill {xword.cols}x{xword.rows} crossword.')
-
-# """)
-
-print(f'Took {sum(times) / trials} seconds on average over {trials} crosswords.')
-print(f'Min time: {min(times)} seconds')
-print(f'Max time: {max(times)} seconds')
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='ye olde crossroad test suite')
+    
+    parser.add_argument('-w', '--wordlist', dest='wordlist_path', type=str, help='filepath for wordlist')
+    parser.add_argument('-g', '--grid', dest='grid_path', type=str, help='filepath for grid')
+    parser.add_argument('-t', '--num_trials', dest='num_trials', type=int, default=5, help='number of grids to try filling')
+    parser.add_argument('-a', '--animate', dest='animate', type=bool, default=False, help='whether to animate grid filling')
+    parser.add_argument('-s', '--strategy', dest='strategy', type=str, default='dfs',
+                        help='which algorithm to run: dfs, minlook')
+    args = parser.parse_args()
+    
+    if not args.wordlist_path or not args.grid_path:
+        sys.exit('You must specify wordlist path and grid path!')
+    
+    run_test(args)
