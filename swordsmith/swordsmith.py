@@ -1,6 +1,7 @@
 import utils
-import random
 import math
+
+from random import shuffle
 from collections import namedtuple, defaultdict
 
 EMPTY = '.'
@@ -95,6 +96,10 @@ class DupeError(Exception):
 # exception for when an invalid word is created
 class BadWordError(Exception):
     def __init__(self, message='Not a word!'):
+        self.message = message
+
+class InvalidStrategyError(Exception):
+    def __init__(self, message='Invalid strategy!'):
         self.message = message
 
 class Crossword:
@@ -353,7 +358,7 @@ class Crossword:
         elif strategy == 'minlook':
             self.fill_minlook(k, printout=printout)
         else:
-            raise ValueError('Invalid strategy')
+            raise InvalidStrategyError()
     
     # fills the crossword using a naive dfs algorithm:
     # - keeps selecting unfilled slot with fewest possible matches
@@ -380,7 +385,7 @@ class Crossword:
         matches = self.wordlist.get_matches(self.entries[slot])
 
         # randomly shuffle matches, this miiiight be slow
-        random.shuffle(matches)
+        shuffle(matches)
 
         for match in matches:
             # try placing the match in slot and try to solve with the match there, otherwise continue
@@ -452,7 +457,7 @@ class Crossword:
         matches = self.wordlist.get_matches(self.entries[slot])
 
         # randomly shuffle matches, this miiiight be slow
-        random.shuffle(matches)
+        shuffle(matches)
 
         while matches:
             match_index, failed_indices = self.minlook(slot, k, matches)

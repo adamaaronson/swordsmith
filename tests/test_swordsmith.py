@@ -61,7 +61,7 @@ if __name__ == "__main__":
     parser.add_argument('-w', '--wordlist', dest='wordlist_path', type=str, default='wordlist/spreadthewordlist.dict', help='filepath for wordlist')
     parser.add_argument('-g', '--grid', dest='grid_path', type=str, help='filepath for grid')
     parser.add_argument('-t', '--num_trials', dest='num_trials', type=int, default=5, help='number of grids to try filling')
-    parser.add_argument('-a', '--animate', dest='animate', type=bool, default=False, help='whether to animate grid filling')
+    parser.add_argument('-a', '--animate', default=False, action='store_true', help='whether to animate grid filling')
     parser.add_argument('-s', '--strategy', dest='strategy', type=str, default='dfs',
                         help='which algorithm to run: dfs, minlook')
     args = parser.parse_args()
