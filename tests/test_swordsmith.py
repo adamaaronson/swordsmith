@@ -3,9 +3,9 @@ import argparse
 import time
 
 # TODO: better way to properly import stuff than this. this sucks
-sys.path.append('../crossroad')
+sys.path.append('../swordsmith')
 
-import crossroad as xr
+import swordsmith as sw
 
 
 def read_grid(filepath, block='#'):
@@ -23,7 +23,7 @@ def read_wordlist(filepath, scored=True, min_score=50):
         words = [w.split(';') for w in words]
         words = [w[0] for w in words if int(w[1]) >= min_score]
     
-    return xr.Wordlist(words)
+    return sw.Wordlist(words)
 
 
 def log_times(times):
@@ -40,7 +40,7 @@ def run_test(args):
     for i in range(args.num_trials):
         tic = time.time()
 
-        xword = xr.Crossword.from_grid(grid, wordlist)
+        xword = sw.Crossword.from_grid(grid, wordlist)
         xword.fill(strategy=args.strategy, k=5, printout=args.animate)
 
         duration = time.time() - tic
@@ -56,7 +56,7 @@ def run_test(args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='ye olde crossroad test suite')
+    parser = argparse.ArgumentParser(description='ye olde swordsmith test suite')
     
     parser.add_argument('-w', '--wordlist', dest='wordlist_path', type=str, default='wordlist/spreadthewordlist.dict', help='filepath for wordlist')
     parser.add_argument('-g', '--grid', dest='grid_path', type=str, help='filepath for grid')

@@ -1,3 +1,3 @@
-# 🚸 CrossRoad
+# ⚔️ Swordsmith
 
-At the intersection of crosswords and AI.
+Forging crosswords, fast.
