@@ -1,6 +1,7 @@
 import utils
 import math
 
+from abc import ABC, abstractmethod
 from random import shuffle
 from collections import namedtuple, defaultdict
 
@@ -98,9 +99,6 @@ class BadWordError(Exception):
     def __init__(self, message='Not a word!'):
         self.message = message
 
-class InvalidStrategyError(Exception):
-    def __init__(self, message='Invalid strategy!'):
-        self.message = message
 
 class Crossword:
     # fills grid of given size with empty squares
@@ -177,7 +175,9 @@ class Crossword:
         self.entries[slot] = new_entry
     
     # places word in given Slot
-    def put_word(self, word, row=0, col=0, dir=ACROSS, add_to_wordlist=True):
+    def put_word(self, word, slot, add_to_wordlist=True):
+        row, col, dir = slot
+
         if add_to_wordlist and self.wordlist:
             self.wordlist.add_word(word)
         
@@ -193,7 +193,6 @@ class Crossword:
             for x in range(len(word)):
                 self.grid[row][col + x] = word[x]
         
-        slot = Slot(row, col, dir)
         prev_word = self.entries[slot]
         
         # place word in entries map and entryset
@@ -349,56 +348,6 @@ class Crossword:
             crossing_entries.append(crossing_entry)
         
         return crossing_entries
-
-    
-    # fill the crossword using the given algorithm
-    def fill(self, strategy, k=10, printout=False):
-        if strategy == 'dfs':
-            self.fill_dfs(printout)
-        elif strategy == 'minlook':
-            self.fill_minlook(k, printout=printout)
-        else:
-            raise InvalidStrategyError()
-    
-    # fills the crossword using a naive dfs algorithm:
-    # - keeps selecting unfilled slot with fewest possible matches
-    # - randomly chooses matching entry for that slot
-    # - backtracks if there is a slot with no matches
-    def fill_dfs(self, printout=False):
-        if printout:
-            utils.clear_terminal()
-            print(self)
-
-        # choose slot with fewest matches
-        slot, num_matches = self.fewest_matches()
-
-        # if some slot has zero matches, fail
-        if num_matches == 0:
-            return False
-
-        # if the grid is filled, succeed if every word is valid and otherwise fail
-        if self.is_grid_filled():
-            return self.has_valid_words()
-        
-        # iterate through all possible matches in the fewest-match slot
-        previous_word = self.entries[slot]
-        matches = self.wordlist.get_matches(self.entries[slot])
-
-        # randomly shuffle matches, this miiiight be slow
-        shuffle(matches)
-
-        for match in matches:
-            # try placing the match in slot and try to solve with the match there, otherwise continue
-            try:
-                self.put_word(match, *slot)
-            except (DupeError, BadWordError):
-                continue
-
-            if self.fill_dfs(printout=printout):
-                return True
-        # if no match works, restore previous word
-        self.put_word(previous_word, *slot, add_to_wordlist=False)
-        return False
     
     # considers given matches, returns index of the one that offers the most possible crossing entries
     # if none of them work, return -1
@@ -431,36 +380,90 @@ class Crossword:
         
         return best_match_index, failed_indices
 
+
+class Filler(ABC):
+    @abstractmethod
+    def fill(self, crossword, animate):
+        """Fills the given crossword using some strategy."""
+
+class DFSFiller(Filler):
+    """Fills the crossword using a naive DFS algorithm:
     
-    # fills the crossword using a dfs algorithm with minlook heuristic:
-    # - keeps selecting unfilled slot with fewest possible matches
-    # - considers k random matching word, chooses word with the most possible crossing entries (product of # in each slot)
-    # - backtracks if there is a slot with no matches
-    def fill_minlook(self, k, printout=False):
-        if printout:
+    - keeps selecting unfilled slot with fewest possible matches
+    - randomly chooses matching entry for that slot
+    - backtracks if there is a slot with no matches"""
+
+    def fill(self, crossword, animate):
+        if animate:
             utils.clear_terminal()
-            print(self)
+            print(crossword)
 
         # choose slot with fewest matches
-        slot, num_matches = self.fewest_matches()
+        slot, num_matches = crossword.fewest_matches()
 
         # if some slot has zero matches, fail
         if num_matches == 0:
             return False
 
         # if the grid is filled, succeed if every word is valid and otherwise fail
-        if self.is_grid_filled():
-            return self.has_valid_words()
+        if crossword.is_grid_filled():
+            return crossword.has_valid_words()
         
         # iterate through all possible matches in the fewest-match slot
-        previous_word = self.entries[slot]
-        matches = self.wordlist.get_matches(self.entries[slot])
+        previous_word = crossword.entries[slot]
+        matches = crossword.wordlist.get_matches(crossword.entries[slot])
+
+        # randomly shuffle matches, this miiiight be slow
+        shuffle(matches)
+
+        for match in matches:
+            # try placing the match in slot and try to solve with the match there, otherwise continue
+            try:
+                crossword.put_word(match, slot)
+            except (DupeError, BadWordError):
+                continue
+
+            if self.fill(crossword, animate):
+                return True
+        # if no match works, restore previous word
+        crossword.put_word(previous_word, slot, add_to_wordlist=False)
+        return False
+
+    
+class MinlookFiller(Filler):
+    """# fills the crossword using a dfs algorithm with minlook heuristic:
+    # - keeps selecting unfilled slot with fewest possible matches
+    # - considers k random matching word, chooses word with the most possible crossing entries (product of # in each slot)
+    # - backtracks if there is a slot with no matches"""
+    
+    def __init__(self, k):
+        self.k = k
+
+    def fill(self, crossword, animate):
+        if animate:
+            utils.clear_terminal()
+            print(crossword)
+
+        # choose slot with fewest matches
+        slot, num_matches = crossword.fewest_matches()
+
+        # if some slot has zero matches, fail
+        if num_matches == 0:
+            return False
+
+        # if the grid is filled, succeed if every word is valid and otherwise fail
+        if crossword.is_grid_filled():
+            return crossword.has_valid_words()
+        
+        # iterate through all possible matches in the fewest-match slot
+        previous_word = crossword.entries[slot]
+        matches = crossword.wordlist.get_matches(crossword.entries[slot])
 
         # randomly shuffle matches, this miiiight be slow
         shuffle(matches)
 
         while matches:
-            match_index, failed_indices = self.minlook(slot, k, matches)
+            match_index, failed_indices = crossword.minlook(slot, self.k, matches)
 
             if match_index != -1:
                 match = matches[match_index]
@@ -474,12 +477,12 @@ class Crossword:
 
             # try placing the match in slot and try to solve with the match there, otherwise continue
             try:
-                self.put_word(match, *slot)
+                crossword.put_word(match, slot)
             except (DupeError, BadWordError):
                 continue
             
-            if self.fill_minlook(k, printout):
+            if self.fill(crossword, animate):
                 return True
         # if no match works, restore previous word
-        self.put_word(previous_word, *slot, add_to_wordlist=False)
+        crossword.put_word(previous_word, slot, add_to_wordlist=False)
         return False

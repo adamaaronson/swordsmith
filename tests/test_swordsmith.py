@@ -32,6 +32,15 @@ def log_times(times):
     print(f'Max time: {max(times)} seconds')
 
 
+def get_filler(args):
+    if args.strategy == 'dfs':
+        return sw.DFSFiller()
+    elif args.strategy == 'minlook':
+        return sw.MinlookFiller(args.k)
+    else:
+        return None
+
+
 def run_test(args):
     wordlist = read_wordlist(args.wordlist_path)
     grid = read_grid(args.grid_path)
@@ -41,7 +50,9 @@ def run_test(args):
         tic = time.time()
 
         xword = sw.Crossword.from_grid(grid, wordlist)
-        xword.fill(strategy=args.strategy, k=5, printout=args.animate)
+        filler = get_filler(args)
+
+        filler.fill(xword, args.animate)
 
         duration = time.time() - tic
 
@@ -58,15 +69,18 @@ def run_test(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='ye olde swordsmith test suite')
     
-    parser.add_argument('-w', '--wordlist', dest='wordlist_path', type=str, default='wordlist/spreadthewordlist.dict', help='filepath for wordlist')
-    parser.add_argument('-g', '--grid', dest='grid_path', type=str, help='filepath for grid')
-    parser.add_argument('-t', '--num_trials', dest='num_trials', type=int, default=5, help='number of grids to try filling')
-    parser.add_argument('-a', '--animate', default=False, action='store_true', help='whether to animate grid filling')
-    parser.add_argument('-s', '--strategy', dest='strategy', type=str, default='dfs',
-                        help='which algorithm to run: dfs, minlook')
+    parser.add_argument('-w', '--wordlist', dest='wordlist_path', type=str,
+                        default='wordlist/spreadthewordlist.dict', help='filepath for wordlist')
+    parser.add_argument('-g', '--grid', dest='grid_path', type=str,
+                        default='grids/15xcommon.txt', help='filepath for grid')
+    parser.add_argument('-t', '--num_trials', dest='num_trials', type=int,
+                        default=5, help='number of grids to try filling')
+    parser.add_argument('-a', '--animate',
+                        default=False, action='store_true', help='whether to animate grid filling')
+    parser.add_argument('-s', '--strategy', dest='strategy', type=str,
+                        default='dfs', help='which algorithm to run: dfs, minlook')
+    parser.add_argument('-k', '--k', dest='k', type=int,
+                        default=5, help='k constant for minlook')
     args = parser.parse_args()
-    
-    if not args.wordlist_path or not args.grid_path:
-        sys.exit('You must specify grid path!')
     
     run_test(args)
