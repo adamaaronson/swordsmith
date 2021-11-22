@@ -14,7 +14,7 @@ def read_grid(filepath, block='#'):
     return grid
 
 
-def read_wordlist(filepath, scored=True, min_score=50):
+def read_wordlist(filepath, dbpath, scored=True, min_score=50):
     words = open(filepath).read().splitlines()
 
     words = [w.upper() for w in words]
@@ -23,7 +23,7 @@ def read_wordlist(filepath, scored=True, min_score=50):
         words = [w.split(';') for w in words]
         words = [w[0] for w in words if int(w[1]) >= min_score]
     
-    return sw.Wordlist(words)
+    return sw.Wordlist(words, dbpath)
 
 
 def log_times(times):
@@ -42,7 +42,9 @@ def get_filler(args):
 
 
 def run_test(args):
-    wordlist = read_wordlist(args.wordlist_path)
+    wordlist = read_wordlist(args.wordlist_path, args.database_path)
+    wordlist.init_database()
+    
     grid = read_grid(args.grid_path)
     times = []
 
@@ -71,6 +73,8 @@ if __name__ == "__main__":
     
     parser.add_argument('-w', '--wordlist', dest='wordlist_path', type=str,
                         default='wordlist/spreadthewordlist.dict', help='filepath for wordlist')
+    parser.add_argument('-d', '--database', dest='database_path', type=str,
+                        default='wordlist/spreadthewordlist.db', help='filepath for wordlist database')
     parser.add_argument('-g', '--grid', dest='grid_path', type=str,
                         default='grids/15xcommon.txt', help='filepath for grid')
     parser.add_argument('-t', '--num_trials', dest='num_trials', type=int,

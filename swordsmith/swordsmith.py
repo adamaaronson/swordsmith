@@ -1,4 +1,6 @@
 import utils
+
+import sqlite3
 import math
 
 from abc import ABC, abstractmethod
@@ -13,7 +15,7 @@ DOWN = 'D'
 
 # collection of words to be used for filling a crossword
 class Wordlist:
-    def __init__(self, words):
+    def __init__(self, words, db=None):
         self.words = set(words)
         self.added_words = set()
 
@@ -24,6 +26,38 @@ class Wordlist:
 
         # mapping from wildcard patterns to lists of matching words, used for memoization
         self.pattern_matches = {}
+
+        if db:
+            self.conn = sqlite3.connect(db)
+            self.cur = self.conn.cursor()
+
+    def get_table_name(self, length):
+        return 'words' + str(length)
+    
+    def get_column_name(self, index):
+        return 'letter' + str(index)
+    
+    def init_database(self):
+        for length in self.words_by_length:
+            # initialize table for each length
+            table_name = self.get_table_name(length)
+            column_names = ['word'] + [self.get_column_name(index) for index in range(length)]
+            columns_str = ', '.join(column_names)
+            
+            self.cur.execute(f'CREATE TABLE IF NOT EXISTS {table_name} ({columns_str})')
+            
+            # add one row for each word
+            word_row = list((w, *tuple(w)) for w in self.words_by_length[length])
+            values_str = ', '.join('?' for _ in range(length + 1))
+            
+            self.cur.executemany(f'INSERT INTO {table_name} VALUES ({values_str})', word_row)
+
+            # create indices
+
+            for column_name in column_names:
+                index_name = table_name + column_name
+
+                self.cur.execute(f'CREATE INDEX IF NOT EXISTS {index_name} ON {table_name}({column_name})')
     
     def add_word(self, word):
         if word not in self.words:
@@ -51,9 +85,24 @@ class Wordlist:
             if word in self.words_by_length[length]:
                 self.words_by_length[length].remove(word)
     
-    # return words in wordlist that match the pattern of this word
-    # TODO: look into table indexing to match each character of the word, something something sqlite
     def get_matches(self, pattern):
+        if pattern in self.pattern_matches:
+            return self.pattern_matches[pattern]
+
+        table_name = self.get_table_name(len(pattern))
+        wheres = [f'{self.get_column_name(i)} = \'{pattern[i]}\'' for i in range(len(pattern)) if pattern[i] != EMPTY]
+        where_str = 'WHERE ' + ' AND '.join(wheres) if wheres else ''
+
+        self.cur.execute(f'SELECT word FROM {table_name} {where_str}')
+
+        matches = [row[0] for row in self.cur.fetchall()]
+
+        self.pattern_matches[pattern] = matches
+
+        return matches
+    
+    # return words in wordlist that match the pattern of this word
+    def get_matches_old(self, pattern):
         # try to get from memo
         if pattern in self.pattern_matches:
             return self.pattern_matches[pattern]
@@ -85,8 +134,8 @@ class Wordlist:
         self.pattern_matches[pattern] = matches
         return matches
 
+
 # position in a grid where a word can go
-Square = namedtuple('Square', ['row', 'col'])
 Slot = namedtuple('Slot', ['row', 'col', 'dir'])
 
 # exception for when a duplicate entry is found
