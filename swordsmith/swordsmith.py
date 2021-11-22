@@ -100,39 +100,6 @@ class Wordlist:
         self.pattern_matches[pattern] = matches
 
         return matches
-    
-    # return words in wordlist that match the pattern of this word
-    def get_matches_old(self, pattern):
-        # try to get from memo
-        if pattern in self.pattern_matches:
-            return self.pattern_matches[pattern]
-        
-        matches = []
-        length = len(pattern)
-        if length not in self.words_by_length:
-            return []
-        
-        # leverage a previously searched superpattern if possible,
-        # e.g. if the pattern is A??M we might have already searched for A??? or ???M
-        candidates = self.words_by_length[length]
-        for i in range(len(pattern)):
-            if pattern[i] == EMPTY:
-                continue
-            superpattern = pattern[:i] + EMPTY + pattern[i+1:]
-            if superpattern in self.pattern_matches:
-                candidates = self.pattern_matches[superpattern]
-                break
-        
-        for w in candidates:
-            for i in range(length):
-                if pattern[i] != EMPTY and pattern[i] != w[i]:
-                    break
-            else:
-                matches.append(w)
-        
-        # write to memo
-        self.pattern_matches[pattern] = matches
-        return matches
 
 
 # position in a grid where a word can go
