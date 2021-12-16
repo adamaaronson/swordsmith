@@ -1,1 +1,3 @@
 __pycache__/
+tests/wordlist/*.db
+tests/wordlist/*.db-journal

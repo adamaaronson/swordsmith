@@ -140,16 +140,23 @@ class Crossword:
     def __str__(self):
         return '\n'.join([' '.join([letter for letter in row]) for row in self.grid])
     
-    # takes in boolean array and returns a crossword where True = block and False = empty
+    # takes in array of chars and returns a crossword where True = block and False = empty
     @classmethod
     def from_grid(cls, grid, wordlist=None):
         rows = len(grid)
         cols = len(grid[0])
 
-        blocks = sum([[(r, c) for c in range(cols) if grid[r][c]] for r in range(rows)], [])
+        blocks = sum([[(r, c) for c in range(cols) if grid[r][c] == BLOCK] for r in range(rows)], [])
 
         xw = cls(rows, cols, wordlist)
         xw.put_blocks(blocks)
+
+        for r in range(rows):
+            for c in range(cols):
+                if grid[r][c] != BLOCK and grid[r][c] != EMPTY:
+                    xw.grid[r][c] = grid[r][c]
+        
+        xw.generate_slots()
 
         return xw
 
@@ -261,11 +268,15 @@ class Crossword:
                     # block hit, check to see if there's a word in progress
                     if curr_word != '':
                         self.entries[slot] = curr_word
+                        if self.is_filled(curr_word):
+                            self.entryset.add(curr_word)
                         curr_word = ''
                         slot = None
             # last word in row
             if curr_word != '':
                 self.entries[slot] = curr_word
+                if self.is_filled(curr_word):
+                    self.entryset.add(curr_word)
 
         # generate down words
         for c in range(self.cols):
@@ -284,11 +295,15 @@ class Crossword:
                     # block hit, check to see if there's a word in progress
                     if curr_word != '':
                         self.entries[slot] = curr_word
+                        if self.is_filled(curr_word):
+                            self.entryset.add(curr_word)
                         curr_word = ''
                         slot = None
             # last word in column
             if curr_word != '':
                 self.entries[slot] = curr_word
+                if self.is_filled(curr_word):
+                    self.entryset.add(curr_word)
         
         # determine crossing slots
         for square in self.across_slots:

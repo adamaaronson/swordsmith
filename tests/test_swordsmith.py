@@ -8,10 +8,8 @@ sys.path.append('../swordsmith')
 import swordsmith as sw
 
 
-def read_grid(filepath, block='#'):
-    grid = open(filepath).read().splitlines()
-    grid = [[1 if char == block else 0 for char in line] for line in grid]
-    return grid
+def read_grid(filepath):
+    return open(filepath).read().splitlines()
 
 
 def read_wordlist(filepath, dbpath, scored=True, min_score=50):
@@ -21,7 +19,7 @@ def read_wordlist(filepath, dbpath, scored=True, min_score=50):
 
     if scored:
         words = [w.split(';') for w in words]
-        words = [w[0] for w in words if int(w[1]) >= min_score]
+        words = [w[0] for w in words if len(w) == 1 or int(w[1]) >= min_score]
     
     return sw.Wordlist(words, dbpath)
 
