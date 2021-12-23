@@ -13,7 +13,8 @@ def read_grid(filepath):
 
 
 def read_wordlist(filepath, dbpath, scored=True, min_score=50):
-    words = open(filepath).read().splitlines()
+    with open(filepath, 'r') as f:
+        words = f.readlines()
 
     words = [w.upper() for w in words]
 
