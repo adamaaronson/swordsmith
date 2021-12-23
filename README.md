@@ -1,3 +1,3 @@
 # ⚔️ Swordsmith
 
-Forging crosswords, fast.
+Forging crosswords, word by word.
