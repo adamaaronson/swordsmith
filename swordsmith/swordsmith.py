@@ -31,17 +31,17 @@ class Wordlist:
             self.conn = sqlite3.connect(db)
             self.cur = self.conn.cursor()
 
-    def get_table_name(self, length):
+    def __get_table_name(self, length):
         return 'words' + str(length)
     
-    def get_column_name(self, index):
+    def __get_column_name(self, index):
         return 'letter' + str(index)
     
     def init_database(self):
         for length in self.words_by_length:
             # initialize table for each length
-            table_name = self.get_table_name(length)
-            column_names = ['word'] + [self.get_column_name(index) for index in range(length)]
+            table_name = self.__get_table_name(length)
+            column_names = ['word'] + [self.__get_column_name(index) for index in range(length)]
             columns_str = ', '.join(column_names)
             
             self.cur.execute(f'CREATE TABLE IF NOT EXISTS {table_name} ({columns_str})')
@@ -140,7 +140,7 @@ class Crossword:
     def __str__(self):
         return '\n'.join([' '.join([letter for letter in row]) for row in self.grid])
     
-    # takes in array of chars and returns a crossword where True = block and False = empty
+    # takes in array of chars and returns a crossword
     @classmethod
     def from_grid(cls, grid, wordlist=None):
         rows = len(grid)
@@ -160,16 +160,16 @@ class Crossword:
 
         return xw
 
-    # returns whether given grid Slot contains a letter
+    # returns whether given square contains a letter
     def is_letter(self, row, col):
         return self.grid[row][col] != EMPTY and self.grid[row][col] != BLOCK
 
-    # places block in certain slot
+    # places block in certain square
     def put_block(self, row, col):
         self.grid[row][col] = BLOCK
         self.generate_slots()
     
-    # places list of blocks in specified slots
+    # places list of blocks in specified squares
     def put_blocks(self, coords):
         for row, col in coords:
             self.grid[row][col] = BLOCK
@@ -251,6 +251,7 @@ class Crossword:
         self.squares_in_slot.clear()
         self.slots_crossing_slot.clear()
 
+        # TODO: make this better, it's ugly
         # generate across words
         for r in range(self.rows):
             curr_word = ''
@@ -331,7 +332,7 @@ class Crossword:
             if matches < fewest_matches:
                 fewest_matches = matches
                 fewest_matches_slot = slot
-        return (fewest_matches_slot, fewest_matches)
+        return fewest_matches_slot, fewest_matches
     
     # returns whether word is completely filled
     def is_filled(self, word):
@@ -429,22 +430,22 @@ class DFSFiller(Filler):
             utils.clear_terminal()
             print(crossword)
 
+        # if the grid is filled, succeed if every word is valid and otherwise fail
+        if crossword.is_grid_filled():
+            return crossword.has_valid_words()
+
         # choose slot with fewest matches
         slot, num_matches = crossword.fewest_matches()
 
         # if some slot has zero matches, fail
         if num_matches == 0:
             return False
-
-        # if the grid is filled, succeed if every word is valid and otherwise fail
-        if crossword.is_grid_filled():
-            return crossword.has_valid_words()
         
         # iterate through all possible matches in the fewest-match slot
         previous_word = crossword.entries[slot]
         matches = crossword.wordlist.get_matches(crossword.entries[slot])
 
-        # randomly shuffle matches, this miiiight be slow
+        # randomly shuffle matches
         shuffle(matches)
 
         for match in matches:
@@ -474,6 +475,10 @@ class MinlookFiller(Filler):
         if animate:
             utils.clear_terminal()
             print(crossword)
+        
+        # if the grid is filled, succeed if every word is valid and otherwise fail
+        if crossword.is_grid_filled():
+            return crossword.has_valid_words()
 
         # choose slot with fewest matches
         slot, num_matches = crossword.fewest_matches()
@@ -481,16 +486,12 @@ class MinlookFiller(Filler):
         # if some slot has zero matches, fail
         if num_matches == 0:
             return False
-
-        # if the grid is filled, succeed if every word is valid and otherwise fail
-        if crossword.is_grid_filled():
-            return crossword.has_valid_words()
         
         # iterate through all possible matches in the fewest-match slot
         previous_word = crossword.entries[slot]
         matches = crossword.wordlist.get_matches(crossword.entries[slot])
 
-        # randomly shuffle matches, this miiiight be slow
+        # randomly shuffle matches
         shuffle(matches)
 
         while matches:
