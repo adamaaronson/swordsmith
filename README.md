@@ -144,8 +144,7 @@ Implementation of `Filler` that uses a naive DFS algorithm.
 
 ### Methods
 - `fill(self, crossword, animate)`
-	- If the grid is already filled, just return `True` if the grid is valid and `False` otherwise
-		- TODO: Should probably just return `True`
+	- If the grid is already filled, just return `True`
 	- Choose next `Slot` to fill using `fewest_matches` heuristic
 		- If `num_matches` is zero, crossword is unfillable, return `False`
 	- Randomly iterate through all possible matches for that `Slot`
@@ -164,8 +163,7 @@ Implementation of `Filler` that uses a naive DFS algorithm.
 
 ### Methods
 - `fill(self, crossword, animate)`
-	- If the grid is already filled, just return `True` if the grid is valid and `False` otherwise
-		- TODO: Should probably just return `True`
+	- If the grid is already filled, just return `True`
 	- Choose next `Slot` to fill using `fewest_matches` heuristic
 		- If `num_matches` is zero, crossword is unfillable, return `False`
 	- Use `minlook` to look ahead to at most `k` random matches and find the one that yields the most possible crossing matches

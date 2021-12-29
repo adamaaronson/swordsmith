@@ -417,7 +417,7 @@ class DFSFiller(Filler):
 
         # if the grid is filled, succeed if every word is valid and otherwise fail
         if crossword.is_grid_filled():
-            return crossword.has_valid_words()
+            return True
 
         # choose slot with fewest matches
         slot, num_matches = crossword.fewest_matches()
@@ -461,9 +461,9 @@ class MinlookFiller(Filler):
             utils.clear_terminal()
             print(crossword)
         
-        # if the grid is filled, succeed if every word is valid and otherwise fail
+        # if the grid is filled, succeed
         if crossword.is_grid_filled():
-            return crossword.has_valid_words()
+            return True
 
         # choose slot with fewest matches
         slot, num_matches = crossword.fewest_matches()
