@@ -11,9 +11,6 @@ Contains the collection of words to be used while filling a crossword, as well a
 ### Fields
 - `words`
 	- Set of words in the wordlist
-- `words_by_length`
-	- Dictionary containing bucketed set of words for each given length
-	- TODO: This might be redundant with the database
 - `added_words`
 	- Set of words that weren't originally in the wordlist, but were added while the program was running
 - `pattern_matches`
