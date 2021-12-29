@@ -19,11 +19,6 @@ class Wordlist:
         self.words = set(words)
         self.added_words = set()
 
-        # mapping from lengths to sets of words of that length
-        self.words_by_length = {}
-        for w in words:
-            self.__add_to_words_by_length(w)
-
         # mapping from wildcard patterns to lists of matching words, used for memoization
         self.pattern_matches = {}
 
@@ -38,7 +33,12 @@ class Wordlist:
         return 'letter' + str(index)
     
     def init_database(self):
-        for length in self.words_by_length:
+        words_by_length = defaultdict(set)
+
+        for word in self.words:
+            words_by_length[len(word)].add(word)
+
+        for length in words_by_length:
             # initialize table for each length
             table_name = self.__get_table_name(length)
             column_names = ['word'] + [self.__get_column_name(index) for index in range(length)]
@@ -47,7 +47,7 @@ class Wordlist:
             self.cur.execute(f'CREATE TABLE IF NOT EXISTS {table_name} ({columns_str})')
             
             # add one row for each word
-            word_row = list((w, *tuple(w)) for w in self.words_by_length[length])
+            word_row = list((w, *tuple(w)) for w in words_by_length[length])
             values_str = ', '.join('?' for _ in range(length + 1))
             
             self.cur.executemany(f'INSERT INTO {table_name} VALUES ({values_str})', word_row)
@@ -63,34 +63,19 @@ class Wordlist:
         if word not in self.words:
             self.words.add(word)
             self.added_words.add(word)
-            self.__add_to_words_by_length(word)
     
     def remove_word(self, word):
         if word in self.words:
             self.words.remove(word)
-            self.__remove_from_words_by_length(word)
         if word in self.added_words:
             self.added_words.remove(word)
-    
-    def __add_to_words_by_length(self, word):
-        length = len(word)
-        if length in self.words_by_length:
-            self.words_by_length[length].add(word)
-        else:
-            self.words_by_length[length] = set([word])
-    
-    def __remove_from_words_by_length(self, word):
-        length = len(word)
-        if length in self.words_by_length:
-            if word in self.words_by_length[length]:
-                self.words_by_length[length].remove(word)
     
     def get_matches(self, pattern):
         if pattern in self.pattern_matches:
             return self.pattern_matches[pattern]
 
-        table_name = self.get_table_name(len(pattern))
-        wheres = [f'{self.get_column_name(i)} = \'{pattern[i]}\'' for i in range(len(pattern)) if pattern[i] != EMPTY]
+        table_name = self.__get_table_name(len(pattern))
+        wheres = [f'{self.__get_column_name(i)} = \'{pattern[i]}\'' for i in range(len(pattern)) if pattern[i] != EMPTY]
         where_str = 'WHERE ' + ' AND '.join(wheres) if wheres else ''
 
         self.cur.execute(f'SELECT word FROM {table_name} {where_str}')
