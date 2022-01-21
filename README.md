@@ -4,6 +4,11 @@ Forging crosswords, word by word.
 
 ---
 
+## Developers
+
+Adam Aaronson
+Jack Joshi
+
 ## Wordlist
 
 Contains the collection of words to be used while filling a crossword, as well as the pattern-matching functionality for filling an incomplete slot.
