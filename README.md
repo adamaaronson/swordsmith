@@ -6,8 +6,8 @@ Forging crosswords, word by word.
 
 ## Developers
 
-Adam Aaronson
-Jack Joshi
+- Adam Aaronson
+- Jack Joshi
 
 ## Wordlist
 
