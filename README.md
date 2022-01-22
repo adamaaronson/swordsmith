@@ -2,12 +2,12 @@
 
 Forging crosswords, word by word.
 
----
-
-## Developers
+### Developers
 
 - Adam Aaronson
 - Jack Joshi
+
+---
 
 ## Wordlist
 
