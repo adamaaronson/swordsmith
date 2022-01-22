@@ -29,6 +29,12 @@ Using any of these optional command line flags:
 | --strategy [dfs minlook] | -s | which filling algorithm to run |
 | --animate | -a | whether to animate grid filling |
 
+For example:
+
+```
+python3 test_swordsmith.py -w wordlist/spreadthewordlist.dict -g grids/7xopen.txt -a
+```
+
 ---
 
 ## Wordlist
