@@ -9,6 +9,28 @@ Forging crosswords, word by word.
 
 ---
 
+## How to Use
+
+From the `tests` folder, run the command:
+
+```
+python3 test_swordsmith.py
+```
+
+Using any of these optional command line flags:
+
+| Flag | Short | Description |
+|------------|----|-----------------------|
+| --wordlist WORDLIST_PATH | -w | filepath for wordlist |
+| --database DATABASE_PATH | -d | filepath for database |
+| --grid GRID_PATH | -g | filepath for grid     |
+| --num_trials NUM_TRIALS | -t | number of grids to try filling |
+| --k K | -k | k constant for minlook |
+| --strategy [dfs minlook] | -s | which filling algorithm to run |
+| --animate | -a | whether to animate grid filling |
+
+---
+
 ## Wordlist
 
 Contains the collection of words to be used while filling a crossword, as well as the pattern-matching functionality for filling an incomplete slot.
