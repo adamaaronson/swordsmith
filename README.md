@@ -6,6 +6,7 @@ Forging crosswords, word by word.
 
 - Adam Aaronson
 - Jack Joshi
+- JT Kirages
 
 ---
 
