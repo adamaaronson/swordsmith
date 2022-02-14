@@ -6,8 +6,14 @@ sys.path.append('../swordsmith')
 
 import swordsmith as sw
 
-xw = sw.AmericanCrossword(5, 5)
+grid = [
+    'BLACK',
+    '.....',
+    '.....',
+    '.....',
+    '.....'
+]
+
+xw = sw.AmericanCrossword.from_grid(grid)
+
 print(xw)
-for s in xw.squares:
-    for slot in xw.squares[s]:
-        print(s, slot, xw.squares[s][slot])

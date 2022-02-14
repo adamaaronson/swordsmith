@@ -88,7 +88,7 @@ class Wordlist:
 
 
 # coordinate in a grid
-Square = namedtuple('Square', ['row', 'col'])
+Square = namedtuple('Square', ['coords', 'letter'])
 
 # position in a grid where a word can go
 Slot = namedtuple('Slot', ['squares', 'word'])
@@ -110,47 +110,8 @@ class Crossword:
         self.wordlist = wordlist
         
         self.slots = set()                                      # set of slots in the puzzle
-        self.squares = defaultdict(lambda: defaultdict(int))    # square => slots that contain it
+        self.squares = defaultdict(lambda: defaultdict(int))    # square => slots that contain it => index of square in slot
         self.wordset = set()                                    # set of filled entries in puzzle
-    
-    # prints crossword
-    def __str__(self):
-        return '\n'.join([' '.join([letter for letter in row]) for row in self.grid])
-    
-    # takes in array of chars and returns a crossword
-    @classmethod
-    def from_grid(cls, grid, wordlist=None):
-        rows = len(grid)
-        cols = len(grid[0])
-
-        blocks = sum([[(r, c) for c in range(cols) if grid[r][c] == BLOCK] for r in range(rows)], [])
-
-        xw = cls(rows, cols, wordlist)
-        xw.put_blocks(blocks)
-
-        for r in range(rows):
-            for c in range(cols):
-                if grid[r][c] != BLOCK and grid[r][c] != EMPTY:
-                    xw.grid[r][c] = grid[r][c]
-        
-        xw.generate_slots()
-
-        return xw
-
-    # returns whether given square contains a letter
-    def is_letter(self, row, col):
-        return self.grid[row][col] != EMPTY and self.grid[row][col] != BLOCK
-
-    # places block in certain square
-    def put_block(self, row, col):
-        self.grid[row][col] = BLOCK
-        self.generate_slots()
-    
-    # places list of blocks in specified squares
-    def put_blocks(self, coords):
-        for row, col in coords:
-            self.grid[row][col] = BLOCK
-        self.generate_slots()
     
     # sets character at index to given character
     def put_letter(self, slot, i, letter):
@@ -219,10 +180,9 @@ class Crossword:
                 raise BadWordError()
 
     # prints the whole word map, nicely formatted
-    def print_words(self):
-        for slot in self.entries:
-            print(slot.row, slot.col, slot.dir, self.entries[slot])
-
+    def __str__(self):
+        return '\n'.join(', '.join(str(s.coords) for s in s.squares) + ' ' + s.word for s in self.slots)
+    
     # finds the slot that has the fewest possible matches, this is probably the best next place to look
     def fewest_matches(self):
         fewest_matches_slot = None
@@ -325,6 +285,46 @@ class AmericanCrossword(Crossword):
         self.grid = [[EMPTY for c in range(cols)] for r in range(rows)] # 2D array of squares
 
         self.generate_slots()
+
+    # takes in array of chars and returns a crossword
+    @classmethod
+    def from_grid(cls, grid, wordlist=None):
+        rows = len(grid)
+        cols = len(grid[0])
+
+        blocks = []
+        
+        for r in range(rows):
+            blocks += [(r, c) for c in range(cols) if grid[r][c] == BLOCK]
+
+        xw = cls(rows, cols, wordlist)
+        if blocks:
+            xw.put_blocks(blocks)
+
+        for r in range(rows):
+            for c in range(cols):
+                if grid[r][c] != BLOCK and grid[r][c] != EMPTY:
+                    xw.grid[r][c] = grid[r][c]
+        
+        xw.generate_slots()
+
+        return xw
+    
+    # prints crossword
+    def __str__(self):
+        return '\n'.join(', '.join(str(square.coords) for square in slot.squares) + ': ' + slot.word for slot in self.slots)
+        return '\n'.join(' '.join([letter for letter in row]) for row in self.grid)
+
+    # places block in certain square
+    def put_block(self, row, col):
+        self.grid[row][col] = BLOCK
+        self.generate_slots()
+    
+    # places list of blocks in specified squares
+    def put_blocks(self, coords):
+        for row, col in coords:
+            self.grid[row][col] = BLOCK
+        self.generate_slots()
     
     def add_slot(self, squares, word):
         slot = Slot(tuple(squares), word)
@@ -351,7 +351,7 @@ class AmericanCrossword(Crossword):
                 if letter != BLOCK:
                     # add a letter to the current word
                     word += letter
-                    squares.append(Square(r, c))
+                    squares.append(Square((r, c), letter))
                 else:
                     # block hit, check to see if there's a word in progress
                     if word != '':
@@ -371,7 +371,7 @@ class AmericanCrossword(Crossword):
                 if letter != BLOCK:
                     # add a letter to the current word
                     word += letter
-                    squares.append(Square(r, c))
+                    squares.append(Square((r, c), letter))
                 else:
                     # block hit, check to see if there's a word in progress
                     if word != '':
