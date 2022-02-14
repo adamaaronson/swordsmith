@@ -87,8 +87,11 @@ class Wordlist:
         return matches
 
 
+# coordinate in a grid
+Square = namedtuple('Square', ['row', 'col'])
+
 # position in a grid where a word can go
-Slot = namedtuple('Slot', ['row', 'col', 'dir'])
+Slot = namedtuple('Slot', ['squares', 'word'])
 
 # exception for when a duplicate entry is found
 class DupeError(Exception):
@@ -103,23 +106,12 @@ class BadWordError(Exception):
 
 class Crossword:
     # fills grid of given size with empty squares
-    def __init__(self, rows, cols, wordlist=None):
-        self.rows = rows
-        self.cols = cols
+    def __init__(self, wordlist=None):
         self.wordlist = wordlist
         
-        self.grid = [[EMPTY for c in range(cols)] for r in range(rows)] # 2D array of squares
-        
-        self.entries = {}               # slot => entry it contains
-        self.entryset = set()           # set of filled entries in puzzle
-
-        self.across_slots = {}          # square => across slot that contains it
-        self.down_slots = {}            # square => down slot that contains it
-        
-        self.squares_in_slot = defaultdict(list)         # slot => list of squares it contains     
-        self.slots_crossing_slot = defaultdict(set)      # slot => set of slots it crosses
-
-        self.generate_slots()
+        self.slots = set()                                      # set of slots in the puzzle
+        self.squares = defaultdict(lambda: defaultdict(int))    # square => slots that contain it
+        self.wordset = set()                                    # set of filled entries in puzzle
     
     # prints crossword
     def __str__(self):
@@ -173,12 +165,12 @@ class Crossword:
         new_entry = old_entry[0:i] + letter + old_entry[i+1 :]
 
         # update entryset
-        if old_entry in self.entryset:
-            self.entryset.remove(old_entry)
+        if old_entry in self.wordset:
+            self.wordset.remove(old_entry)
         if self.is_filled(new_entry):
             if self.is_dupe(new_entry):
                 raise DupeError()
-            self.entryset.add(new_entry)
+            self.wordset.add(new_entry)
         
         self.entries[slot] = new_entry
     
@@ -206,9 +198,9 @@ class Crossword:
         # place word in entries map and entryset
         self.entries[slot] = word
         if self.is_filled(prev_word):
-            self.entryset.remove(prev_word)
+            self.wordset.remove(prev_word)
         if self.is_filled(word):
-            self.entryset.add(word)
+            self.wordset.add(word)
         
         # update crossing words
         for square in self.squares_in_slot[slot]:
@@ -225,79 +217,6 @@ class Crossword:
             
             if self.is_filled(crossing_word) and crossing_word not in self.wordlist.words:
                 raise BadWordError()
-                
-
-    # generates dictionary that maps Slot to word
-    def generate_slots(self):
-        # reset slot mappings
-        self.entries.clear()
-        self.across_slots.clear()
-        self.down_slots.clear()
-        self.squares_in_slot.clear()
-        self.slots_crossing_slot.clear()
-
-        # TODO: make this better, it's ugly
-        # generate across words
-        for r in range(self.rows):
-            curr_word = ''
-            slot = Slot(0, 0, ACROSS)
-            for c in range(self.cols):
-                letter = self.grid[r][c]
-                if letter != BLOCK:
-                    # add a letter to the current word
-                    curr_word += letter
-                    if len(curr_word) == 1:
-                        slot = Slot(r, c, ACROSS)
-                    self.across_slots[r, c] = slot
-                    self.squares_in_slot[slot].append((r, c))
-                else:
-                    # block hit, check to see if there's a word in progress
-                    if curr_word != '':
-                        self.entries[slot] = curr_word
-                        if self.is_filled(curr_word):
-                            self.entryset.add(curr_word)
-                        curr_word = ''
-                        slot = None
-            # last word in row
-            if curr_word != '':
-                self.entries[slot] = curr_word
-                if self.is_filled(curr_word):
-                    self.entryset.add(curr_word)
-
-        # generate down words
-        for c in range(self.cols):
-            curr_word = ''
-            slot = Slot(0, 0, DOWN)
-            for r in range(self.rows):
-                letter = self.grid[r][c]
-                if letter != BLOCK:
-                    # add a letter to the current word
-                    curr_word += letter
-                    if len(curr_word) == 1:
-                        slot = Slot(r, c, DOWN)
-                    self.down_slots[r, c] = slot
-                    self.squares_in_slot[slot].append((r, c))
-                else:
-                    # block hit, check to see if there's a word in progress
-                    if curr_word != '':
-                        self.entries[slot] = curr_word
-                        if self.is_filled(curr_word):
-                            self.entryset.add(curr_word)
-                        curr_word = ''
-                        slot = None
-            # last word in column
-            if curr_word != '':
-                self.entries[slot] = curr_word
-                if self.is_filled(curr_word):
-                    self.entryset.add(curr_word)
-        
-        # determine crossing slots
-        for square in self.across_slots:
-            if square in self.down_slots:
-                across_slot = self.across_slots[square]
-                down_slot = self.down_slots[square]
-                self.slots_crossing_slot[across_slot].add(down_slot)
-                self.slots_crossing_slot[down_slot].add(across_slot)
 
     # prints the whole word map, nicely formatted
     def print_words(self):
@@ -340,7 +259,7 @@ class Crossword:
 
     # returns whether or not a given word is already in the grid
     def is_dupe(self, word):
-        return word in self.entryset
+        return word in self.wordset
 
     # returns list of entries that cross the given slot, optionally given a word to theoretically be in the slot
     def get_crossing_entries(self, slot, word=None):
@@ -396,6 +315,72 @@ class Crossword:
                 best_cross_product = cross_product
         
         return best_match_index, failed_indices
+
+class AmericanCrossword(Crossword):
+    def __init__(self, rows, cols, wordlist=None):
+        Crossword.__init__(self, wordlist)
+
+        self.rows = rows
+        self.cols = cols
+        self.grid = [[EMPTY for c in range(cols)] for r in range(rows)] # 2D array of squares
+
+        self.generate_slots()
+    
+    def add_slot(self, squares, word):
+        slot = Slot(tuple(squares), word)
+        self.slots.add(slot)
+
+        for i, square in enumerate(squares):
+            self.squares[square][slot] = i
+        
+        if self.is_filled(word):
+            self.wordset.add(word)
+
+    def generate_slots(self):
+        # reset slot mappings
+        self.squares.clear()
+        self.slots.clear()
+        self.wordset.clear()
+
+        # generate across words
+        for r in range(self.rows):
+            word = ''
+            squares = []
+            for c in range(self.cols):
+                letter = self.grid[r][c]
+                if letter != BLOCK:
+                    # add a letter to the current word
+                    word += letter
+                    squares.append(Square(r, c))
+                else:
+                    # block hit, check to see if there's a word in progress
+                    if word != '':
+                        self.add_slot(squares, word)
+                        word = ''
+                        squares = []
+            # last word in row
+            if word != '':
+                self.add_slot(squares, word)
+
+        # generate down words
+        for c in range(self.cols):
+            word = ''
+            squares = []
+            for r in range(self.rows):
+                letter = self.grid[r][c]
+                if letter != BLOCK:
+                    # add a letter to the current word
+                    word += letter
+                    squares.append(Square(r, c))
+                else:
+                    # block hit, check to see if there's a word in progress
+                    if word != '':
+                        self.add_slot(squares, word)
+                        word = ''
+                        squares = []
+            # last word in column
+            if word != '':
+                self.add_slot(squares, word)
 
 
 class Filler(ABC):
