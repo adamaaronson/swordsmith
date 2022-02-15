@@ -13,10 +13,13 @@ using namespace swordsmith;
  * DFS and Minlook will inherit from this base class.
  */
 class Filler {
-    public:
-        bool fill(Crossword crossword, bool animate);
 
-    private:
-        Crossword crossword_;
-        bool animate_;
+    public:
+
+        /**
+         * Any derived filler classes will need to implement this function.
+         * Fills the given crossword using some strategy.
+         */
+        virtual bool Fill(Crossword crossword, bool animate) = 0;
+
 };
