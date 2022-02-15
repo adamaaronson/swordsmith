@@ -10,9 +10,6 @@ from collections import namedtuple, defaultdict
 EMPTY = '.'
 BLOCK = '█'
 
-ACROSS = 'A'
-DOWN = 'D'
-
 # collection of words to be used for filling a crossword
 class Wordlist:
     def __init__(self, words, db=None):
