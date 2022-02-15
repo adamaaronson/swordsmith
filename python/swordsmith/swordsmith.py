@@ -250,7 +250,7 @@ class Crossword:
 
 class AmericanCrossword(Crossword):
     def __init__(self, rows, cols, wordlist=None):
-        Crossword.__init__(self, wordlist)
+        super(AmericanCrossword, self).__init__(wordlist)
 
         self.rows = rows
         self.cols = cols
@@ -283,6 +283,40 @@ class AmericanCrossword(Crossword):
         xw.__generate_slots_from_grid()
 
         return xw
+    
+    @staticmethod
+    def is_across_slot(slot):
+        return len({row for row, col in slot}) == 1
+    
+    @staticmethod
+    def is_down_slot(slot):
+        return len({col for row, col in slot}) == 1
+    
+    def get_clue_numbers_and_words(self):
+        square_index = 1
+
+        across_slots = set()
+        down_slots = set()
+
+        across_words = {} # square index => slot
+        down_words = {} # square index => slot
+
+        for row in range(self.rows):
+            for col in range(self.cols):
+                increment_index = False
+                for slot in self.squares[(row, col)]:
+                    if self.is_across_slot(slot) and slot not in across_slots:
+                        across_slots.add(slot)
+                        across_words[square_index] = self.words[slot]
+                        increment_index = True
+                    if self.is_down_slot(slot) and slot not in down_slots:
+                        down_slots.add(slot)
+                        down_words[square_index] = self.words[slot]
+                        increment_index = True
+                if increment_index:
+                    square_index += 1
+        
+        return across_words, down_words
     
     def generate_grid_from_slots(self):
         for slot in self.slots:
