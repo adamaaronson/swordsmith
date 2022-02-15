@@ -112,6 +112,10 @@ class Crossword:
         
         self.wordset = set()                                    # set of filled words in puzzle
     
+    # prints the whole word map, nicely formatted
+    def __str__(self):
+        return '\n'.join(', '.join(str(square) for square in slot) + ': ' + self.words[slot] for slot in self.slots)
+
     # sets character at index to given character
     def put_letter(self, slot, i, letter):
         old_word = self.words[slot]
@@ -127,69 +131,54 @@ class Crossword:
         # update entryset
         if old_word in self.wordset:
             self.wordset.remove(old_word)
-        if self.is_filled(new_word):
+        if self.is_word_filled(new_word):
             if self.is_dupe(new_word):
                 raise DupeError()
             self.wordset.add(new_word)
         
+        # update words for just this slot, not crossing slots
         self.words[slot] = new_word
     
     # places word in given slot
     def put_word(self, word, slot, add_to_wordlist=True):
-        row, col, dir = slot
-
         if add_to_wordlist and self.wordlist:
             self.wordlist.add_word(word)
         
         # check if dupe
         if self.is_dupe(word):
             raise DupeError()
-
-        # place word in grid array
-        if dir == DOWN:
-            for y in range(len(word)):
-                self.grid[row + y][col] = word[y]
-        else:
-            for x in range(len(word)):
-                self.grid[row][col + x] = word[x]
         
-        prev_word = self.entries[slot]
+        prev_word = self.words[slot]
         
         # place word in entries map and entryset
-        self.entries[slot] = word
-        if self.is_filled(prev_word):
+        self.words[slot] = word
+        if self.is_word_filled(prev_word):
             self.wordset.remove(prev_word)
-        if self.is_filled(word):
+        if self.is_word_filled(word):
             self.wordset.add(word)
         
         # update crossing words
-        for square in self.squares_in_slot[slot]:
-            square_row, square_col = square
-            if dir == DOWN:
-                crossing_slot = self.across_slots[square]
-                self.put_letter(crossing_slot, col - crossing_slot.col, self.grid[square_row][square_col])
-            else:
-                crossing_slot = self.down_slots[square]
-                self.put_letter(crossing_slot, row - crossing_slot.row, self.grid[square_row][square_col])
+        for i, square in enumerate(slot):
+            for crossing_slot in self.squares[square]:
+                if crossing_slot == slot:
+                    continue
+                
+                self.put_letter(crossing_slot, self.squares[square][crossing_slot], word[i])
             
             # check to see if it created an invalid crossing word
-            crossing_word = self.entries[crossing_slot]
+            crossing_word = self.words[crossing_slot]
             
-            if self.is_filled(crossing_word) and crossing_word not in self.wordlist.words:
+            if self.is_word_filled(crossing_word) and (self.wordlist and crossing_word not in self.wordlist.words):
                 raise BadWordError()
-
-    # prints the whole word map, nicely formatted
-    def __str__(self):
-        return '\n'.join(', '.join(str(square) for square in slot) + ': ' + self.words[slot] for slot in self.slots)
     
     # finds the slot that has the fewest possible matches, this is probably the best next place to look
     def fewest_matches(self):
         fewest_matches_slot = None
         fewest_matches = len(self.wordlist.words) + 1
 
-        for slot in self.entries:
-            word = self.entries[slot]
-            if self.is_filled(word):
+        for slot in self.words:
+            word = self.words[slot]
+            if self.is_word_filled(word):
                 continue
             matches = len(self.wordlist.get_matches(word))
             if matches < fewest_matches:
@@ -198,49 +187,37 @@ class Crossword:
         return fewest_matches_slot, fewest_matches
     
     # returns whether word is completely filled
-    def is_filled(self, word):
+    def is_word_filled(self, word):
         return EMPTY not in word
 
-    # returns whether or not the whole crossword is filled
-    def is_grid_filled(self):
-        for row in self.grid:
-            for letter in row:
-                if letter == EMPTY:
-                    return False
-        return True
-
-    # returns whether or not the crossword is validly filled
-    def has_valid_words(self):
-        for word in self.entries.values():
-            if self.is_filled(word) and word not in self.wordlist.words:
-                return False
-        return True
-
-    # returns whether or not a given word is already in the grid
+     # returns whether or not a given word is already in the grid
     def is_dupe(self, word):
         return word in self.wordset
+
+    # returns whether or not the whole crossword is filled
+    def is_filled(self):
+        return all(self.is_word_filled(word) for word in self.words.values())
 
     # returns list of entries that cross the given slot, optionally given a word to theoretically be in the slot
     def get_crossing_entries(self, slot, word=None):
         if not word:
-            word = self.entries[slot]
+            word = self.words[slot]
         
         crossing_entries = []
 
-        for i, square in enumerate(self.squares_in_slot[slot]):
+        for i, square in enumerate(slot):
             letter = word[i]
 
-            if slot.dir == DOWN:
-                crossing_slot = self.across_slots[square]
-                index = slot.col - crossing_slot.col
-            else:
-                crossing_slot = self.down_slots[square]
-                index = slot.row - crossing_slot.row
-            
-            crossing_entry = self.entries[crossing_slot]
-            crossing_entry = crossing_entry[:index] + letter + crossing_entry[index + 1:]
+            for crossing_slot in self.squares[square]:
+                if crossing_slot == slot:
+                    continue
 
-            crossing_entries.append(crossing_entry)
+                index = self.squares[square][crossing_slot]
+                
+                crossing_entry = self.words[crossing_slot]
+                crossing_entry = crossing_entry[:index] + letter + crossing_entry[index + 1:]
+
+                crossing_entries.append(crossing_entry)
         
         return crossing_entries
     
@@ -283,7 +260,7 @@ class AmericanCrossword(Crossword):
         self.cols = cols
         self.grid = [[EMPTY for c in range(cols)] for r in range(rows)] # 2D array of squares
 
-        self.generate_slots()
+        self.generate_slots_from_grid()
 
     # takes in array of chars and returns a crossword
     @classmethod
@@ -294,7 +271,9 @@ class AmericanCrossword(Crossword):
         blocks = []
         
         for r in range(rows):
-            blocks += [(r, c) for c in range(cols) if grid[r][c] == BLOCK]
+            for c in range(cols):
+                if grid[r][c] == BLOCK:
+                    blocks.append((r, c))
 
         xw = cls(rows, cols, wordlist)
         if blocks:
@@ -305,24 +284,31 @@ class AmericanCrossword(Crossword):
                 if grid[r][c] != BLOCK and grid[r][c] != EMPTY:
                     xw.grid[r][c] = grid[r][c]
         
-        xw.generate_slots()
+        xw.generate_slots_from_grid()
 
         return xw
     
+    def generate_grid_from_slots(self):
+        for slot in self.slots:
+            for i, square in enumerate(slot):
+                row, col = square
+                self.grid[row][col] = self.words[slot][i]
+    
     # prints crossword
     def __str__(self):
-        return '\n'.join(' '.join([letter for letter in row]) for row in self.grid) + '\n' + Crossword.__str__(self)
+        self.generate_grid_from_slots()
+        return '\n'.join(' '.join([letter for letter in row]) for row in self.grid)
 
     # places block in certain square
     def put_block(self, row, col):
         self.grid[row][col] = BLOCK
-        self.generate_slots()
+        self.generate_slots_from_grid()
     
     # places list of blocks in specified squares
     def put_blocks(self, coords):
         for row, col in coords:
             self.grid[row][col] = BLOCK
-        self.generate_slots()
+        self.generate_slots_from_grid()
     
     def add_slot(self, squares, word):
         slot = tuple(squares)
@@ -331,15 +317,16 @@ class AmericanCrossword(Crossword):
         for i, square in enumerate(squares):
             self.squares[square][slot] = i
         
-        if self.is_filled(word):
+        if self.is_word_filled(word):
             self.wordset.add(word)
         
         self.words[slot] = word
 
-    def generate_slots(self):
+    def generate_slots_from_grid(self):
         # reset slot mappings
         self.squares.clear()
         self.slots.clear()
+        self.words.clear()
         self.wordset.clear()
 
         # generate across words
@@ -401,8 +388,15 @@ class DFSFiller(Filler):
             print(crossword)
 
         # if the grid is filled, succeed if every word is valid and otherwise fail
-        if crossword.is_grid_filled():
+        if crossword.is_filled():
             return True
+        else:
+            filled_words = len([word for word in crossword.words.values() if crossword.is_word_filled(word)])
+            if filled_words == 78:
+                print(crossword.words)
+                print(len(crossword.words))
+                return True
+
 
         # choose slot with fewest matches
         slot, num_matches = crossword.fewest_matches()
@@ -412,8 +406,8 @@ class DFSFiller(Filler):
             return False
         
         # iterate through all possible matches in the fewest-match slot
-        previous_word = crossword.entries[slot]
-        matches = crossword.wordlist.get_matches(crossword.entries[slot])
+        previous_word = crossword.words[slot]
+        matches = crossword.wordlist.get_matches(crossword.words[slot])
 
         # randomly shuffle matches
         shuffle(matches)
@@ -447,7 +441,7 @@ class MinlookFiller(Filler):
             print(crossword)
         
         # if the grid is filled, succeed
-        if crossword.is_grid_filled():
+        if crossword.is_filled():
             return True
 
         # choose slot with fewest matches
@@ -458,8 +452,8 @@ class MinlookFiller(Filler):
             return False
         
         # iterate through all possible matches in the fewest-match slot
-        previous_word = crossword.entries[slot]
-        matches = crossword.wordlist.get_matches(crossword.entries[slot])
+        previous_word = crossword.words[slot]
+        matches = crossword.wordlist.get_matches(crossword.words[slot])
 
         # randomly shuffle matches
         shuffle(matches)
