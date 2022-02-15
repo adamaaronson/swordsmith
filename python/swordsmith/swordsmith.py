@@ -11,7 +11,7 @@ from random import shuffle
 from collections import namedtuple, defaultdict
 
 EMPTY = '.'
-BLOCK = '█'
+BLOCK = ' '
 
 # collection of words to be used for filling a crossword
 class Wordlist:
