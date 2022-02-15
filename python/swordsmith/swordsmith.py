@@ -99,18 +99,14 @@ class BadWordError(Exception):
 
 
 class Crossword:
-    # fills grid of given size with empty squares
     def __init__(self, wordlist=None):
-        self.wordlist = wordlist
-
-        # square: unique tuple of coordinates
-        # slot: unique tuple of squares
-
         self.slots = set()                                      # set of slots in the puzzle
         self.squares = defaultdict(lambda: defaultdict(int))    # square => slots that contain it => index of square in slot
         self.words = {}                                         # slot => word in that slot
         
         self.wordset = set()                                    # set of filled words in puzzle
+
+        self.wordlist = wordlist                                # wordlist with which to fill the crossword
     
     # prints the whole word map, nicely formatted
     def __str__(self):
@@ -260,7 +256,7 @@ class AmericanCrossword(Crossword):
         self.cols = cols
         self.grid = [[EMPTY for c in range(cols)] for r in range(rows)] # 2D array of squares
 
-        self.generate_slots_from_grid()
+        self.__generate_slots_from_grid()
 
     # takes in array of chars and returns a crossword
     @classmethod
@@ -284,7 +280,7 @@ class AmericanCrossword(Crossword):
                 if grid[r][c] != BLOCK and grid[r][c] != EMPTY:
                     xw.grid[r][c] = grid[r][c]
         
-        xw.generate_slots_from_grid()
+        xw.__generate_slots_from_grid()
 
         return xw
     
@@ -302,15 +298,15 @@ class AmericanCrossword(Crossword):
     # places block in certain square
     def put_block(self, row, col):
         self.grid[row][col] = BLOCK
-        self.generate_slots_from_grid()
+        self.__generate_slots_from_grid()
     
     # places list of blocks in specified squares
     def put_blocks(self, coords):
         for row, col in coords:
             self.grid[row][col] = BLOCK
-        self.generate_slots_from_grid()
+        self.__generate_slots_from_grid()
     
-    def add_slot(self, squares, word):
+    def __add_slot(self, squares, word):
         slot = tuple(squares)
         self.slots.add(slot)
 
@@ -322,7 +318,7 @@ class AmericanCrossword(Crossword):
         
         self.words[slot] = word
 
-    def generate_slots_from_grid(self):
+    def __generate_slots_from_grid(self):
         # reset slot mappings
         self.squares.clear()
         self.slots.clear()
@@ -342,12 +338,12 @@ class AmericanCrossword(Crossword):
                 else:
                     # block hit, check to see if there's a word in progress
                     if word != '':
-                        self.add_slot(squares, word)
+                        self.__add_slot(squares, word)
                         word = ''
                         squares = []
             # last word in row
             if word != '':
-                self.add_slot(squares, word)
+                self.__add_slot(squares, word)
 
         # generate down words
         for c in range(self.cols):
@@ -362,12 +358,12 @@ class AmericanCrossword(Crossword):
                 else:
                     # block hit, check to see if there's a word in progress
                     if word != '':
-                        self.add_slot(squares, word)
+                        self.__add_slot(squares, word)
                         word = ''
                         squares = []
             # last word in column
             if word != '':
-                self.add_slot(squares, word)
+                self.__add_slot(squares, word)
 
 
 class Filler(ABC):
