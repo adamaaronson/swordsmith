@@ -4,10 +4,10 @@ Forging crosswords, word by word.
 
 ## How to Use
 
-From the `tests` folder, run the command:
+From the `python` folder, run the command:
 
 ```
-python3 test_swordsmith.py
+python3 swordsmith
 ```
 
 Using any of these optional command line flags:
@@ -25,7 +25,7 @@ Using any of these optional command line flags:
 For example:
 
 ```
-python3 test_swordsmith.py -w wordlist/spreadthewordlist.dict -g grids/7xopen.txt -a
+python3 swordsmith -w wordlist/spreadthewordlist.dict -g grids/7xopen.txt -a
 ```
 
 ---
@@ -59,24 +59,63 @@ Contains the collection of words to be used while filling a crossword, as well a
 	- `pattern` is a string with any number of wildcard (`EMPTY`) characters
 ---
 
-## Slot
-
-Represents a position in a grid where a word can go.
-
-Simply a namedtuple of `row`, `col`, and `dir`, where `dir` is either `ACROSS` or `DOWN`.
-
-TODO: Slots should probably contain their length and/or a list of squares they correspond to, maybe instead of the direction
-
-TODO: Should probably have a namedtuple for `Square` as well
-
----
 ## Crossword
 
-Represents a rectangular grid of squares (`(row, col)` pairs). Squares comprise slots, which contain entries. Entries are strings whose `i`th character corresponds to the `i`th square of the slot. Entries can be filled, partially `EMPTY`, or completely `EMPTY`.
+Represents a collection of crossing slots and the words they contain. A slot is a unique tuple of squares, and a square is a unique tuple of coordinates. Every slot has a corresponding word whose `i`th character corresponds to the `i`th square of the slot. Words can be filled, partially `EMPTY`, or completely `EMPTY`.
 
-If two slots contain the same square, their entries "cross" at that square and their letters corresponding to that square must be the same.
+If two slots contain the same square, their words "cross" at that square and their letters corresponding to that square must be the same.
 
-TODO: Clear up "entry" and "word" terminology, I think it works to say a word is a completely filled entry
+### Fields
+- `slots`
+	- Set of slots in the crossword
+- `squares`
+    - Dictionary of dictionaries that keeps track of which slots contain which squares
+    - Square => slot => index of square within slot
+- `words`
+	- Dictionary mapping each slot to its corresponding word
+	- Updated as grid is filled
+- `wordset`
+	- Set of filled words in the grid
+	- Used for dupe detection
+	- Updated as grid is filled
+- `wordlist`
+	- Wordlist that contains all of the crossword's filled words
+	- TODO: This probably shouldn't be held in the Crossword class, seems anti-encapsulation
+
+### Methods
+- `is_letter(self, row, col)`
+	- Returns whether the given square contains a letter, i.e. is not `EMPTY` or `BLOCK`
+- `put_letter(self, slot, i, letter)`
+	- Places given `letter` at `i`th square of given `slot`
+	- Does not update crossing slots
+- `put_word(self, word, slot, add_to_wordlist=True)`
+	- Places `word` in the given `slot`
+	- By default it should add it to the wordlist if it isn't already included, but if a filler is restoring a previous word then `add_to_wordlist` can be set to `False`
+	- Updates words in crossing slots using `put_letter`
+- `fewest_matches(self)`
+	- Returns the unfilled slot in the grid with the fewest matches according to the `wordlist`, as well as its number of matches
+	- Used as a next-slot heuristic
+- `is_word_filled(self, word)`
+	- Returns whether `word` is completely filled
+	- TODO: This has no business being in the `Crossword` class
+- `is_dupe(self, word)`
+	- Returns whether `word` is a dupe, i.e. whether it's already in the `wordset`
+- `is_filled(self)`
+	- Returns whether every square in the grid is non-`EMPTY`
+- `get_crossing_words(self, slot, word=None)`
+	- Returns words that would cross the given `slot` if the given `word` was entered into it, without actually placing the `word` in
+	- Used for `minlook` heuristic
+- `minlook(self, slot, k, matches)`
+	- Randomly looks at `k` possible `matches`
+	- Returns index of match that yields the most possible crossing words if it were placed in the `slot`, as well as the indices of matches that immediately cause inconsistencies
+	- Determines number of crossing words by computing the sum of logarithms of crossing match counts
+	- Used for `minlook` and `arc-consistency` heuristic
+
+---
+
+## American Crossword
+
+Represents a special case of the crossword that consists of a two-dimensional grid of black and white squares, where every maximally contiguous horizontal or vertical sequence of white squares is a slot. Black squares are also called blocks and they are not a part of any word.
 
 ### Fields
 - `rows`
@@ -85,71 +124,22 @@ TODO: Clear up "entry" and "word" terminology, I think it works to say a word is
 	- Number of columns in the grid
 - `grid`
 	- `rows` by `cols` array of characters representing the letters in each square of the grid
-- `wordlist`
-	- Wordlist that contains all of the crossword's filled entries
-	- TODO: This probably shouldn't be held in the Crossword class, seems anti-encapsulation
-- `entries`
-	- Dictionary mapping each `Slot` to its corresponding entry
-	- Should be updated as grid is filled
-- `entryset`
-	- Set of filled entries in the grid
-	- Used for dupe detection
-	- Should be updated as grid is filled
-- `across_slots`
-	- Dictionary mapping each non-`BLOCK` square to the `ACROSS` `Slot` containing it
-- `down_slots`
-	- Dictionary mapping each non-`BLOCK` square to the `DOWN` `Slot` containing it
-	- TODO: These should really be held in one dictionary somehow, the current implementation is super repetitive and inelegant
-- `squares_in_slot`
-	- Dictionary mapping each `Slot` to a list of squares it contains
-	- TODO: This should probably be a property of `Slot`, not `Crossword`
-- `slots_crossing_slot`
-	- Dictionary mapping each `Slot` to a set of `Slot`s it crosses
 
 ### Class Methods
 - `from_grid(cls, grid, wordlist=None)`
 	- Constructs a crossword from the given `grid` 2D array and `wordlist`
 
 ### Methods
-- `is_letter(self, row, col)`
-	- Returns whether the given square contains a letter, i.e. is not `EMPTY` or `BLOCK`
 - `put_block(self, row, col)`
 	- Places `BLOCK` at given square
 - `put_blocks(self, coords)`
 	- Places `BLOCK` at all of the given squares in the list `coords`
-- `put_letter(self, slot, i, letter)`
-	- Places given `letter` at `i`th square of given `slot`
-	- Does not update crossing slots
-- `put_word(self, word, slot, add_to_wordlist=True)`
-	- Places `word` in the given `slot`
-	- By default it should add it to the wordlist if it isn't already included, but if a filler is restoring a previous word then `add_to_wordlist` can be set to `False`
-	- Updates entries in crossing slots using `put_letter`
-- `generate_slots(self)`
-	- Processes `grid` array to create all the `Slot` dictionary fields
+- `__generate_grid_from_slots(self)`
+    - Processes `slots` to refresh the grid array
+    - Called whenever the grid is about to be printed, in case the contents of the slots have changed
+- `__generate_slots_from_grid(self)`
+	- Processes `grid` array to generate the across and down slots
 	- Called whenever grid shape changes
-	- TODO: This function is a behemoth, make it better
-- `print_words(self)`
-	- Neatly prints out all the entries in the grid
-- `fewest_matches(self)`
-	- Returns the unfilled `Slot` in the grid with the fewest matches according to the `wordlist`, as well as its number of matches
-	- Used as a next-slot heuristic
-- `is_filled(self, word)`
-	- Returns whether `word` is completely filled
-	- TODO: This has no business being in the `Crossword` class
-- `is_grid_filled(self)`
-	- Returns whether every square in the grid is non-`EMPTY`
-- `has_valid_words(self)`
-	- Returns whether every filled entry is in the `wordlist`
-- `is_dupe(self, word)`
-	- Returns whether `word` is a dupe, i.e. whether it's already in the `entryset`
-- `get_crossing_entries(self, slot, word=None)`
-	- Returns entries that would cross the given `slot` if the given `word` was entered into it, without actually placing the `word` in
-	- Used for `minlook` heuristic
-- `minlook(self, slot, k, matches)`
-	- Randomly looks at `k` possible `matches`
-	- Returns index of match that yields the most possible crossing entries if it were placed in the `slot`, as well as the indices of matches that immediately cause inconsistencies
-	- Determines number of crossing entries by computing the sum of logarithms of crossing match counts
-	- Used for `minlook` and `arc-consistency` heuristic
 
 ---
 
@@ -171,11 +161,11 @@ Implementation of `Filler` that uses a naive DFS algorithm.
 ### Methods
 - `fill(self, crossword, animate)`
 	- If the grid is already filled, just return `True`
-	- Choose next `Slot` to fill using `fewest_matches` heuristic
+	- Choose next slot to fill using `fewest_matches` heuristic
 		- If `num_matches` is zero, crossword is unfillable, return `False`
-	- Randomly iterate through all possible matches for that `Slot`
+	- Randomly iterate through all possible matches for that slot
 		- If the match can be placed without creating a dupe or invalid word, then recurse
-	- If none of the matches worked, restore the `Slot`'s previous entry and return `False`
+	- If none of the matches worked, restore the slot's previous word and return `False`
 
 ---
 
@@ -190,10 +180,10 @@ Implementation of `Filler` that uses a naive DFS algorithm.
 ### Methods
 - `fill(self, crossword, animate)`
 	- If the grid is already filled, just return `True`
-	- Choose next `Slot` to fill using `fewest_matches` heuristic
+	- Choose next slot to fill using `fewest_matches` heuristic
 		- If `num_matches` is zero, crossword is unfillable, return `False`
 	- Use `minlook` to look ahead to at most `k` random matches and find the one that yields the most possible crossing matches
 		- Throw out both the chosen match and the failed matches from the matches list
 		- If the chosen match can be placed without creating a dupe or invalid word, then recurse
 		- If the chosen match didn't work and there are more matches to try, use `minlook` again
-	- If none of the matches worked, restore the `Slot`'s previous entry and return `False`
+	- If none of the matches worked, restore the slot's previous word and return `False`
