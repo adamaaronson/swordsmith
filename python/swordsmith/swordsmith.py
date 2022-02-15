@@ -128,7 +128,7 @@ class Crossword:
         
         new_word = old_word[0:i] + letter + old_word[i+1:]
 
-        # update entryset
+        # update wordset
         if old_word in self.wordset:
             self.wordset.remove(old_word)
         if self.is_word_filled(new_word):
@@ -150,7 +150,7 @@ class Crossword:
         
         prev_word = self.words[slot]
         
-        # place word in entries map and entryset
+        # place word in words map and wordset
         self.words[slot] = word
         if self.is_word_filled(prev_word):
             self.wordset.remove(prev_word)
@@ -198,12 +198,12 @@ class Crossword:
     def is_filled(self):
         return all(self.is_word_filled(word) for word in self.words.values())
 
-    # returns list of entries that cross the given slot, optionally given a word to theoretically be in the slot
-    def get_crossing_entries(self, slot, word=None):
+    # returns list of words that cross the given slot, optionally given a word to theoretically be in the slot
+    def get_crossing_words(self, slot, word=None):
         if not word:
             word = self.words[slot]
         
-        crossing_entries = []
+        crossing_words = []
 
         for i, square in enumerate(slot):
             letter = word[i]
@@ -214,14 +214,14 @@ class Crossword:
 
                 index = self.squares[square][crossing_slot]
                 
-                crossing_entry = self.words[crossing_slot]
-                crossing_entry = crossing_entry[:index] + letter + crossing_entry[index + 1:]
+                crossing_word = self.words[crossing_slot]
+                crossing_word = crossing_word[:index] + letter + crossing_word[index + 1:]
 
-                crossing_entries.append(crossing_entry)
+                crossing_words.append(crossing_word)
         
-        return crossing_entries
+        return crossing_words
     
-    # considers given matches, returns index of the one that offers the most possible crossing entries
+    # considers given matches, returns index of the one that offers the most possible crossing words
     # if none of them work, return -1
     def minlook(self, slot, k, matches):
         match_indices = range(min(k, len(matches))) # just take first k matches
@@ -233,8 +233,8 @@ class Crossword:
         for match_index in match_indices:
             cross_product = 0
 
-            for crossing_entry in self.get_crossing_entries(slot, matches[match_index]):
-                num_matches = len(self.wordlist.get_matches(crossing_entry))
+            for crossing_word in self.get_crossing_words(slot, matches[match_index]):
+                num_matches = len(self.wordlist.get_matches(crossing_word))
                 
                 # if no matches for some crossing slot, give up and move on
                 # this is basically "arc-consistency lookahead"
@@ -379,7 +379,7 @@ class DFSFiller(Filler):
     """Fills the crossword using a naive DFS algorithm:
     
     - keeps selecting unfilled slot with fewest possible matches
-    - randomly chooses matching entry for that slot
+    - randomly chooses matching word for that slot
     - backtracks if there is a slot with no matches"""
 
     def fill(self, crossword, animate):
@@ -429,7 +429,7 @@ class DFSFiller(Filler):
 class MinlookFiller(Filler):
     """# fills the crossword using a dfs algorithm with minlook heuristic:
     # - keeps selecting unfilled slot with fewest possible matches
-    # - considers k random matching word, chooses word with the most possible crossing entries (product of # in each slot)
+    # - considers k random matching word, chooses word with the most possible crossing words (product of # in each slot)
     # - backtracks if there is a slot with no matches"""
     
     def __init__(self, k):
