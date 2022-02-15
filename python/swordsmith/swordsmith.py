@@ -549,14 +549,14 @@ def get_filler(args):
         return None
 
 
-def run_test(args):
-    wordlist = read_wordlist(args.wordlist_path, args.database_path)
+def run_test(args, wordlist_path_prefix, grid_path_prefix):
+    wordlist = read_wordlist(wordlist_path_prefix + args.wordlist_path, wordlist_path_prefix + args.database_path)
     wordlist.init_database()
     
-    grid = read_grid(args.grid_path)
+    grid = read_grid(grid_path_prefix + args.grid_path)
     times = []
 
-    for i in range(args.num_trials):
+    for _ in range(args.num_trials):
         tic = time.time()
 
         xword = AmericanCrossword.from_grid(grid, wordlist)
@@ -578,17 +578,17 @@ def run_test(args):
 
 def main():
     dirname = os.path.dirname(__file__)
-    wordlist_path = os.path.join(dirname, WORDLIST_PATH_PREFIX)
-    grid_path = os.path.join(dirname, GRID_PATH_PREFIX)
+    wordlist_path_prefix = os.path.join(dirname, WORDLIST_PATH_PREFIX)
+    grid_path_prefix = os.path.join(dirname, GRID_PATH_PREFIX)
 
     parser = argparse.ArgumentParser(description='ye olde swordsmith engine')
     
     parser.add_argument('-w', '--wordlist', dest='wordlist_path', type=str,
-                        default=f'{wordlist_path}spreadthewordlist.dict', help='filepath for wordlist')
+                        default='spreadthewordlist.dict', help='filepath for wordlist')
     parser.add_argument('-d', '--database', dest='database_path', type=str,
-                        default=f'{wordlist_path}spreadthewordlist.db', help='filepath for wordlist database')
+                        default='spreadthewordlist.db', help='filepath for wordlist database')
     parser.add_argument('-g', '--grid', dest='grid_path', type=str,
-                        default=f'{grid_path}15xcommon.txt', help='filepath for grid')
+                        default='15xcommon.txt', help='filepath for grid')
     parser.add_argument('-t', '--num_trials', dest='num_trials', type=int,
                         default=5, help='number of grids to try filling')
     parser.add_argument('-a', '--animate',
@@ -599,7 +599,7 @@ def main():
                         default=5, help='k constant for minlook')
     args = parser.parse_args()
     
-    run_test(args)
+    run_test(args, wordlist_path_prefix, grid_path_prefix)
 
 
 if __name__ == "__main__":

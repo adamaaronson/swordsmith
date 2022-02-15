@@ -25,7 +25,7 @@ Using any of these optional command line flags:
 For example:
 
 ```
-python3 swordsmith -w wordlist/spreadthewordlist.dict -g grids/7xopen.txt -a
+python3 swordsmith -w spreadthewordlist.dict -g 7xopen.txt -a
 ```
 
 ---
