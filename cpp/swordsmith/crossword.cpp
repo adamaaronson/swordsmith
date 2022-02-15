@@ -42,6 +42,7 @@ void Crossword::PutLetter(Slot slot, int i, char letter) {
     new_word = old_word[0:i] + letter + old_word[i+1:];
 
     // update wordset
+    //
 
 }
 
