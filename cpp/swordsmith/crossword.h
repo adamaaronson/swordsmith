@@ -34,11 +34,6 @@ class Crossword {
                   std::map<Slot, Word> words, std::set<Word> wordset, Wordlist wordlist);
 
         /**
-         * Returns whether the given square contains a letter.
-         */
-        bool IsLetter(int row, int col);
-
-        /**
          * Places given letter at ith square of given slot.
          * NOTE: Does not update crossing slots.
          */

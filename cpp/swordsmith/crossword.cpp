@@ -5,6 +5,7 @@
  */
 
 #include "crossword.h"
+#include <stdexcept>
 
 /**
  * Standard constructor for general crossword class.
@@ -14,21 +15,35 @@ Crossword::Crossword() {}
 /**
  * Custom constructor for general crossword class.
  */
-Crossword::Crossword(std::set<Slot> slots, std::map<Square, std::map<Slot, int>> squares,
-            std::map<Slot, Word> words, std::set<Word> wordset, Wordlist wordlist) {
-
-            }
-
-/**
- * Returns whether the given square contains a letter.
- */
-bool Crossword::IsLetter(int row, int col);
+Crossword::Crossword(std::set<Slot> slots, std::map<Square, std::map<Slot, int>> squares, std::map<Slot, Word> words, std::set<Word> wordset, Wordlist wordlist) {
+    slots_ = slots;
+    squares_ = squares;
+    words_ = words;
+    wordset_ = wordset;
+    wordlist_ = wordlist;
+}
 
 /**
  * Places given letter at ith square of given slot.
  * NOTE: Does not update crossing slots.
  */
-void Crossword::PutLetter(Slot slot, int i, char letter);
+void Crossword::PutLetter(Slot slot, int i, char letter) {
+
+    old_word = words_[slot];
+    if (i >= length(slot)) {
+        throw std::invalid_argument("Index greater than word length!");
+    }
+
+    // no change
+    if (old_word[i] == letter) {
+        return;
+    }
+
+    new_word = old_word[0:i] + letter + old_word[i+1:];
+
+    // update wordset
+
+}
 
 /**
  * Places word in given slot.
