@@ -9,6 +9,8 @@
 #include <set>
 #include <map>
 #include <string>
+#include <vector>
+#include <tuple>
 
 using namespace swordsmith;
 
@@ -34,49 +36,49 @@ class Crossword {
         /**
          * Returns whether the given square contains a letter.
          */
-        IsLetter(int row, int col);
+        bool IsLetter(int row, int col);
 
         /**
          * Places given letter at ith square of given slot.
          * NOTE: Does not update crossing slots.
          */
-        PutLetter(Slot slot, int i, char letter);
+        void PutLetter(Slot slot, int i, char letter);
 
         /**
          * Places word in given slot.
          * Defaults to adding the word to the wordlist if not already included.
          * Updates words in crossing slots using PutLetter().
          */
-        PutWord(Word word, Slot slot, bool add_to_wordlist=true);
+        void PutWord(Word word, Slot slot, bool add_to_wordlist=true);
 
         /**
          * Returns the unfilled slot in the grid with the fewest matches.
          * Also returns the corresponding number of matches.
          * Used as a next-slot heuristic.
          */
-        FewestMatches();
+        std::tuple<Slot, int> FewestMatches();
 
         /**
          * Returns whether word is completely filled.
          */
-        IsWordFilled(Word word);
+        bool IsWordFilled(Word word);
 
         /**
          * Returns whether word is a dupe (i.e. already in the wordset).
          */
-        IsDupe(Word word);
+        bool IsDupe(Word word);
 
         /**
          * Returns whether every square in the frid is non-empty.
          */
-        IsFilled();
+        bool IsFilled();
 
         /**
          * Returns words that would cross the given slot if the given word was placed into it.
          * Does not actually place word in slot.
          * Used for Minlook() heuristic.
          */
-        GetCrossingWords(Slot slot, Word word=NULL);
+        std::vector<std::string> GetCrossingWords(Slot slot, Word word=NULL);
 
         /**
          * Randomly looks at k possible matches.
@@ -85,7 +87,7 @@ class Crossword {
          * Determines number of crossing words by computing the sum of logarithms of crossing match counts.
          * Used for Minlook() and arc-consistency heuristic.
          */
-        Minlook(Slot slot, int k, std::array<int> matches);
+        std::tuple<int, std::vector<int>> Minlook(Slot slot, int k, std::vector<int> matches);
 
     private:
 

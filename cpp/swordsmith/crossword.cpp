@@ -9,13 +9,15 @@
 /**
  * Standard constructor for general crossword class.
  */
-Crossword::Crossword();
+Crossword::Crossword() {}
 
 /**
  * Custom constructor for general crossword class.
  */
 Crossword::Crossword(std::set<Slot> slots, std::map<Square, std::map<Slot, int>> squares,
-            std::map<Slot, Word> words, std::set<Word> wordset, Wordlist wordlist);
+            std::map<Slot, Word> words, std::set<Word> wordset, Wordlist wordlist) {
+
+            }
 
 /**
  * Returns whether the given square contains a letter.
@@ -40,29 +42,29 @@ void Crossword::PutWord(Word word, Slot slot, bool add_to_wordlist=true);
  * Also returns the corresponding number of matches.
  * Used as a next-slot heuristic.
  */
-Crossword::FewestMatches();
+std::tuple<Slot, int> Crossword::FewestMatches();
 
 /**
  * Returns whether word is completely filled.
  */
-Crossword::IsWordFilled(Word word);
+bool Crossword::IsWordFilled(Word word);
 
 /**
  * Returns whether word is a dupe (i.e. already in the wordset).
  */
-Crossword::IsDupe(Word word);
+bool Crossword::IsDupe(Word word);
 
 /**
  * Returns whether every square in the frid is non-empty.
  */
-Crossword::IsFilled();
+bool Crossword::IsFilled();
 
 /**
  * Returns words that would cross the given slot if the given word was placed into it.
  * Does not actually place word in slot.
  * Used for Minlook() heuristic.
  */
-Crossword::GetCrossingWords(Slot slot, Word word=NULL);
+std::vector<std::string> Crossword::GetCrossingWords(Slot slot, Word word=NULL);
 
 /**
  * Randomly looks at k possible matches.
@@ -71,4 +73,4 @@ Crossword::GetCrossingWords(Slot slot, Word word=NULL);
  * Determines number of crossing words by computing the sum of logarithms of crossing match counts.
  * Used for Minlook() and arc-consistency heuristic.
  */
-Crossword::Minlook(Slot slot, int k, std::array<int> matches);
+std::tuple<int, std::vector<int>> Crossword::Minlook(Slot slot, int k, std::vector<int> matches);
