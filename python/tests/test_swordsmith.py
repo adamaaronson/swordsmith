@@ -50,7 +50,7 @@ def run_test(args):
     for i in range(args.num_trials):
         tic = time.time()
 
-        xword = sw.Crossword.from_grid(grid, wordlist)
+        xword = sw.AmericanCrossword.from_grid(grid, wordlist)
         filler = get_filler(args)
 
         filler.fill(xword, args.animate)

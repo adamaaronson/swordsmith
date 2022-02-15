@@ -14,9 +14,13 @@ grid = [
     '.....'
 ]
 
-slot = ((0, 0), (1, 0), (2, 0), (3, 0), (4, 0))
-print(slot)
+with open('grids/15xcommon.txt', 'r') as f:
+    grid = f.read().splitlines()
+
 
 xw = sw.AmericanCrossword.from_grid(grid)
 
 print(xw)
+
+for slot in xw.words:
+    print(slot, xw.words[slot])
