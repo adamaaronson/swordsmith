@@ -87,13 +87,7 @@ class Wordlist:
         return matches
 
 
-# coordinate in a grid
-Square = namedtuple('Square', ['coords', 'letter'])
-
-# position in a grid where a word can go
-Slot = namedtuple('Slot', ['squares', 'word'])
-
-# exception for when a duplicate entry is found
+# exception for when a duplicate word is found
 class DupeError(Exception):
     def __init__(self, message='Dupe found!'):
         self.message = message
@@ -108,34 +102,39 @@ class Crossword:
     # fills grid of given size with empty squares
     def __init__(self, wordlist=None):
         self.wordlist = wordlist
-        
+
+        # square: unique tuple of coordinates
+        # slot: unique tuple of squares
+
         self.slots = set()                                      # set of slots in the puzzle
         self.squares = defaultdict(lambda: defaultdict(int))    # square => slots that contain it => index of square in slot
-        self.wordset = set()                                    # set of filled entries in puzzle
+        self.words = {}                                         # slot => word in that slot
+        
+        self.wordset = set()                                    # set of filled words in puzzle
     
     # sets character at index to given character
     def put_letter(self, slot, i, letter):
-        old_entry = self.entries[slot]
-        if i >= len(old_entry):
+        old_word = self.words[slot]
+        if i >= len(slot):
             raise IndexError('Index greater than word length!')
 
-        if old_entry[i] == letter:
+        if old_word[i] == letter:
             # no change
             return
         
-        new_entry = old_entry[0:i] + letter + old_entry[i+1 :]
+        new_word = old_word[0:i] + letter + old_word[i+1:]
 
         # update entryset
-        if old_entry in self.wordset:
-            self.wordset.remove(old_entry)
-        if self.is_filled(new_entry):
-            if self.is_dupe(new_entry):
+        if old_word in self.wordset:
+            self.wordset.remove(old_word)
+        if self.is_filled(new_word):
+            if self.is_dupe(new_word):
                 raise DupeError()
-            self.wordset.add(new_entry)
+            self.wordset.add(new_word)
         
-        self.entries[slot] = new_entry
+        self.words[slot] = new_word
     
-    # places word in given Slot
+    # places word in given slot
     def put_word(self, word, slot, add_to_wordlist=True):
         row, col, dir = slot
 
@@ -181,7 +180,7 @@ class Crossword:
 
     # prints the whole word map, nicely formatted
     def __str__(self):
-        return '\n'.join(', '.join(str(s.coords) for s in s.squares) + ' ' + s.word for s in self.slots)
+        return '\n'.join(', '.join(str(square) for square in slot) + ': ' + self.words[slot] for slot in self.slots)
     
     # finds the slot that has the fewest possible matches, this is probably the best next place to look
     def fewest_matches(self):
@@ -312,8 +311,7 @@ class AmericanCrossword(Crossword):
     
     # prints crossword
     def __str__(self):
-        return '\n'.join(', '.join(str(square.coords) for square in slot.squares) + ': ' + slot.word for slot in self.slots)
-        return '\n'.join(' '.join([letter for letter in row]) for row in self.grid)
+        return '\n'.join(' '.join([letter for letter in row]) for row in self.grid) + '\n' + Crossword.__str__(self)
 
     # places block in certain square
     def put_block(self, row, col):
@@ -327,7 +325,7 @@ class AmericanCrossword(Crossword):
         self.generate_slots()
     
     def add_slot(self, squares, word):
-        slot = Slot(tuple(squares), word)
+        slot = tuple(squares)
         self.slots.add(slot)
 
         for i, square in enumerate(squares):
@@ -335,6 +333,8 @@ class AmericanCrossword(Crossword):
         
         if self.is_filled(word):
             self.wordset.add(word)
+        
+        self.words[slot] = word
 
     def generate_slots(self):
         # reset slot mappings
@@ -351,7 +351,7 @@ class AmericanCrossword(Crossword):
                 if letter != BLOCK:
                     # add a letter to the current word
                     word += letter
-                    squares.append(Square((r, c), letter))
+                    squares.append((r, c))
                 else:
                     # block hit, check to see if there's a word in progress
                     if word != '':
@@ -371,7 +371,7 @@ class AmericanCrossword(Crossword):
                 if letter != BLOCK:
                     # add a letter to the current word
                     word += letter
-                    squares.append(Square((r, c), letter))
+                    squares.append((r, c))
                 else:
                     # block hit, check to see if there's a word in progress
                     if word != '':
