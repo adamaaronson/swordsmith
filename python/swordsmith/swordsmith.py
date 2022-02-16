@@ -23,6 +23,11 @@ class Crossword:
     def __str__(self):
         return '\n'.join(', '.join(str(square) for square in slot) + ': ' + self.words[slot] for slot in self.slots)
 
+    @staticmethod
+    def is_word_filled(word):
+        """Returns whether word is completely filled"""
+        return EMPTY not in word
+
     def put_letter(self, slot, i, letter):
         """Sets letter at the given index of the given slot"""
         old_word = self.words[slot]
@@ -65,11 +70,6 @@ class Crossword:
                     continue
                 
                 self.put_letter(crossing_slot, self.squares[square][crossing_slot], word[i])
-    
-    @staticmethod
-    def is_word_filled(word):
-        """Returns whether word is completely filled"""
-        return EMPTY not in word
 
     def is_dupe(self, word):
         """Returns whether or not a given word is already in the grid"""
