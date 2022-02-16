@@ -69,7 +69,8 @@ class Crossword:
                 self.put_letter(crossing_slot, self.squares[square][crossing_slot], word[i])
     
     # returns whether word is completely filled
-    def is_word_filled(self, word):
+    @staticmethod
+    def is_word_filled(word):
         return EMPTY not in word
 
      # returns whether or not a given word is already in the grid
@@ -78,7 +79,7 @@ class Crossword:
 
     # returns whether or not the whole crossword is filled
     def is_filled(self):
-        return all(self.is_word_filled(word) for word in self.words.values())
+        return all(Crossword.is_word_filled(word) for word in self.words.values())
 
 
 class AmericanCrossword(Crossword):
@@ -180,7 +181,7 @@ class AmericanCrossword(Crossword):
         for i, square in enumerate(squares):
             self.squares[square][slot] = i
         
-        if self.is_word_filled(word):
+        if Crossword.is_word_filled(word):
             self.wordset.add(word)
         
         self.words[slot] = word
@@ -331,7 +332,7 @@ class Filler(ABC):
                 crossing_word = crossword.words[crossing_slot]
                 new_crossing_word = crossing_word[:index] + letter + crossing_word[index + 1:]
 
-                if crossword.is_word_filled(crossing_word) and crossing_word == new_crossing_word:
+                if Crossword.is_word_filled(crossing_word) and crossing_word == new_crossing_word:
                     # this word was already there, ignore
                     continue
 
@@ -352,7 +353,7 @@ class Filler(ABC):
 
         # make sure crossing words are valid
         for crossing_word in new_crossing_words:
-            if crossword.is_word_filled(crossing_word) and crossing_word not in wordlist.words:
+            if Crossword.is_word_filled(crossing_word) and crossing_word not in wordlist.words:
                 return False # created invalid word
             if crossword.is_dupe(crossing_word):
                 return False # created dupe
@@ -371,7 +372,7 @@ class Filler(ABC):
 
         for slot in crossword.words:
             word = crossword.words[slot]
-            if crossword.is_word_filled(word):
+            if Crossword.is_word_filled(word):
                 continue
             matches = len(wordlist.get_matches(word))
             if matches < fewest_matches:
@@ -427,7 +428,7 @@ class DFSFiller(Filler):
         if crossword.is_filled():
             return True
         else:
-            filled_words = len([word for word in crossword.words.values() if crossword.is_word_filled(word)])
+            filled_words = len([word for word in crossword.words.values() if Crossword.is_word_filled(word)])
             if filled_words == 78:
                 print(crossword.words)
                 print(len(crossword.words))
