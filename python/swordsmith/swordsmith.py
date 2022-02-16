@@ -13,7 +13,6 @@ from collections import namedtuple, defaultdict
 EMPTY = '.'
 BLOCK = ' '
 
-
 class Crossword:
     def __init__(self):
         self.slots = set()                                      # set of slots in the puzzle
@@ -21,12 +20,11 @@ class Crossword:
         self.words = {}                                         # slot => word in that slot
         self.wordset = set()                                    # set of filled words in puzzle
     
-    # prints the whole word map, nicely formatted
     def __str__(self):
         return '\n'.join(', '.join(str(square) for square in slot) + ': ' + self.words[slot] for slot in self.slots)
 
-    # sets character at index to given character
     def put_letter(self, slot, i, letter):
+        """Sets letter at the given index of the given slot"""
         old_word = self.words[slot]
         if i >= len(slot):
             raise IndexError('Index greater than word length!')
@@ -46,8 +44,8 @@ class Crossword:
         # update words for just this slot, not crossing slots
         self.words[slot] = new_word
     
-    # places word in given slot
     def put_word(self, word, slot, wordlist_to_update=None):
+        """Places word in the given slot, optionally adding it to the given wordlist"""
         if wordlist_to_update:
             wordlist_to_update.add_word(word)
         
@@ -68,17 +66,17 @@ class Crossword:
                 
                 self.put_letter(crossing_slot, self.squares[square][crossing_slot], word[i])
     
-    # returns whether word is completely filled
     @staticmethod
     def is_word_filled(word):
+        """Returns whether word is completely filled"""
         return EMPTY not in word
 
-     # returns whether or not a given word is already in the grid
     def is_dupe(self, word):
+        """Returns whether or not a given word is already in the grid"""
         return word in self.wordset
 
-    # returns whether or not the whole crossword is filled
     def is_filled(self):
+        """Returns whether or not the whole crossword is filled"""
         return all(Crossword.is_word_filled(word) for word in self.words.values())
 
 
@@ -92,9 +90,9 @@ class AmericanCrossword(Crossword):
 
         self.__generate_slots_from_grid()
 
-    # takes in array of chars and returns a crossword
     @classmethod
     def from_grid(cls, grid):
+        """Generates AmericanCrossword from 2D array of characters"""
         rows = len(grid)
         cols = len(grid[0])
 
@@ -127,6 +125,7 @@ class AmericanCrossword(Crossword):
         return len({col for row, col in slot}) == 1
     
     def get_clue_numbers_and_words(self):
+        """Returns across words and down words and their numbers a la newspaper crosswords"""
         square_index = 1
 
         across_slots = set()
@@ -158,7 +157,6 @@ class AmericanCrossword(Crossword):
                 row, col = square
                 self.grid[row][col] = self.words[slot][i]
     
-    # prints crossword
     def __str__(self):
         self.generate_grid_from_slots()
         return '\n'.join(' '.join([letter for letter in row]) for row in self.grid)
