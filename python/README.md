@@ -30,6 +30,83 @@ python3 swordsmith -w spreadthewordlist.dict -g 7xopen.txt -a
 
 ---
 
+## Crossword
+
+Represents a collection of crossing slots and the words they contain. A slot is a unique tuple of squares, and a square is a unique tuple of coordinates. Every slot has a corresponding word whose `i`th character corresponds to the `i`th square of the slot. Words can be filled, partially `EMPTY`, or completely `EMPTY`.
+
+If two slots contain the same square, their words "cross" at that square and their letters corresponding to that square must be the same.
+
+### Fields
+- `slots`
+	- Set of slots in the crossword
+- `squares`
+    - Dictionary of dictionaries that keeps track of which slots contain which squares
+    - Square => slot => index of square within slot
+- `words`
+	- Dictionary mapping each slot to its corresponding word
+	- Updated as grid is filled
+- `wordset`
+	- Set of filled words in the grid
+	- Used for dupe detection
+	- Updated as grid is filled
+
+### Static Methods
+- `is_word_filled(self, word)`
+	- Returns whether `word` is completely filled
+
+### Methods
+- `put_letter(self, slot, i, letter)`
+	- Places given `letter` at `i`th square of given `slot`
+	- Does not update crossing slots
+- `put_word(self, word, slot, add_to_wordlist=True)`
+	- Places `word` in the given `slot`
+	- By default it should add it to the wordlist if it isn't already included, but if a filler is restoring a previous word then `add_to_wordlist` can be set to `False`
+	- Updates words in crossing slots using `put_letter`
+- `is_dupe(self, word)`
+	- Returns whether `word` is a dupe, i.e. whether it's already in the `wordset`
+- `is_filled(self)`
+	- Returns whether every square in the grid is non-`EMPTY`
+
+---
+
+## American Crossword
+
+Represents a special case of the crossword that consists of a two-dimensional grid of black and white squares, where every maximally contiguous horizontal or vertical sequence of white squares is a slot. Black squares are also called blocks and they are not a part of any word.
+
+### Fields
+- `rows`
+	- Number of rows in the grid
+- `cols`
+	- Number of columns in the grid
+- `grid`
+	- `rows` by `cols` array of characters representing the letters in each square of the grid
+
+### Class Methods
+- `from_grid(cls, grid)`
+	- Generates a crossword from 2D array of characters
+
+### Static Methods
+- `is_across_slot(slot)`
+    - Determines whether the given slot is an Across slot
+- `is_down_slot(slot)`
+    - Determines whether the given slot is a Down slot
+
+### Methods
+- `get_clue_numbers_and_words(self)`
+    - Returns dictionaries of across and down words, indexed by their numbers à la newspaper crossword
+- `put_block(self, row, col)`
+	- Places `BLOCK` at given square
+- `put_blocks(self, coords)`
+	- Places `BLOCK` at all of the given squares in the list `coords`
+- `__generate_grid_from_slots(self)`
+    - Processes `slots` to refresh the grid array
+    - Called whenever the grid is about to be printed, in case the contents of the slots have changed
+- `__generate_slots_from_grid(self)`
+	- Processes `grid` array to generate the across and down slots
+	- Called whenever grid shape changes
+
+---
+
 ## Wordlist
 
 Contains the collection of words to be used while filling a crossword, as well as the pattern-matching functionality for filling an incomplete slot.
@@ -59,98 +136,30 @@ Contains the collection of words to be used while filling a crossword, as well a
 	- `pattern` is a string with any number of wildcard (`EMPTY`) characters
 ---
 
-## Crossword
+## Filler
 
-Represents a collection of crossing slots and the words they contain. A slot is a unique tuple of squares, and a square is a unique tuple of coordinates. Every slot has a corresponding word whose `i`th character corresponds to the `i`th square of the slot. Words can be filled, partially `EMPTY`, or completely `EMPTY`.
+Abstract base class containing useful methods for filling crosswords.
 
-If two slots contain the same square, their words "cross" at that square and their letters corresponding to that square must be the same.
+### Abstract Methods
+- `fill(self, crossword, wordlist, animate)`
+	- Fills the given `crossword` using some strategy
+	- Can optionally `animate` the filling process by printing out the grid at each step
 
-### Fields
-- `slots`
-	- Set of slots in the crossword
-- `squares`
-    - Dictionary of dictionaries that keeps track of which slots contain which squares
-    - Square => slot => index of square within slot
-- `words`
-	- Dictionary mapping each slot to its corresponding word
-	- Updated as grid is filled
-- `wordset`
-	- Set of filled words in the grid
-	- Used for dupe detection
-	- Updated as grid is filled
-- `wordlist`
-	- Wordlist that contains all of the crossword's filled words
-	- TODO: This probably shouldn't be held in the Crossword class, seems anti-encapsulation
+## Static Methods
 
-### Methods
-- `is_letter(self, row, col)`
-	- Returns whether the given square contains a letter, i.e. is not `EMPTY` or `BLOCK`
-- `put_letter(self, slot, i, letter)`
-	- Places given `letter` at `i`th square of given `slot`
-	- Does not update crossing slots
-- `put_word(self, word, slot, add_to_wordlist=True)`
-	- Places `word` in the given `slot`
-	- By default it should add it to the wordlist if it isn't already included, but if a filler is restoring a previous word then `add_to_wordlist` can be set to `False`
-	- Updates words in crossing slots using `put_letter`
-- `fewest_matches(self)`
+- `get_new_crossing_words(crossword, slot, word)`
+	- Returns words that would cross the given `slot` if the given `word` was entered into it, without actually placing the `word` in
+	- Used for `minlook` heuristic and `is_valid_match`
+- `is_valid_match(crossword, wordlist, slot, match)`
+    - Returns whether the `match` can be placed in the `slot` without creating a dupe or invalid word.
+- `fewest_matches(crossword, wordlist)`
 	- Returns the unfilled slot in the grid with the fewest matches according to the `wordlist`, as well as its number of matches
 	- Used as a next-slot heuristic
-- `is_word_filled(self, word)`
-	- Returns whether `word` is completely filled
-	- TODO: This has no business being in the `Crossword` class
-- `is_dupe(self, word)`
-	- Returns whether `word` is a dupe, i.e. whether it's already in the `wordset`
-- `is_filled(self)`
-	- Returns whether every square in the grid is non-`EMPTY`
-- `get_crossing_words(self, slot, word=None)`
-	- Returns words that would cross the given `slot` if the given `word` was entered into it, without actually placing the `word` in
-	- Used for `minlook` heuristic
-- `minlook(self, slot, k, matches)`
+- `minlook(crossword, wordlist, slot, matches, k)`
 	- Randomly looks at `k` possible `matches`
 	- Returns index of match that yields the most possible crossing words if it were placed in the `slot`, as well as the indices of matches that immediately cause inconsistencies
 	- Determines number of crossing words by computing the sum of logarithms of crossing match counts
 	- Used for `minlook` and `arc-consistency` heuristic
-
----
-
-## American Crossword
-
-Represents a special case of the crossword that consists of a two-dimensional grid of black and white squares, where every maximally contiguous horizontal or vertical sequence of white squares is a slot. Black squares are also called blocks and they are not a part of any word.
-
-### Fields
-- `rows`
-	- Number of rows in the grid
-- `cols`
-	- Number of columns in the grid
-- `grid`
-	- `rows` by `cols` array of characters representing the letters in each square of the grid
-
-### Class Methods
-- `from_grid(cls, grid, wordlist=None)`
-	- Constructs a crossword from the given `grid` 2D array and `wordlist`
-
-### Methods
-- `put_block(self, row, col)`
-	- Places `BLOCK` at given square
-- `put_blocks(self, coords)`
-	- Places `BLOCK` at all of the given squares in the list `coords`
-- `__generate_grid_from_slots(self)`
-    - Processes `slots` to refresh the grid array
-    - Called whenever the grid is about to be printed, in case the contents of the slots have changed
-- `__generate_slots_from_grid(self)`
-	- Processes `grid` array to generate the across and down slots
-	- Called whenever grid shape changes
-
----
-
-## Filler
-
-Abstract Base Class for an algorithm that fills a `Crossword`.
-
-### Abstract Methods
-- `fill(self, crossword, animate)`
-	- Fills the given `crossword` using some strategy
-	- Can optionally `animate` the filling process by printing out the grid at each step
 
 ---
 
@@ -159,7 +168,7 @@ Abstract Base Class for an algorithm that fills a `Crossword`.
 Implementation of `Filler` that uses a naive DFS algorithm.
 
 ### Methods
-- `fill(self, crossword, animate)`
+- `fill(self, crossword, wordlist, animate)`
 	- If the grid is already filled, just return `True`
 	- Choose next slot to fill using `fewest_matches` heuristic
 		- If `num_matches` is zero, crossword is unfillable, return `False`
@@ -178,7 +187,7 @@ Implementation of `Filler` that uses a naive DFS algorithm.
 	- Number of potential matches to look ahead to at each fill step
 
 ### Methods
-- `fill(self, crossword, animate)`
+- `fill(self, crossword, wordlist, animate)`
 	- If the grid is already filled, just return `True`
 	- Choose next slot to fill using `fewest_matches` heuristic
 		- If `num_matches` is zero, crossword is unfillable, return `False`
