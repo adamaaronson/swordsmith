@@ -13,90 +13,6 @@ from collections import namedtuple, defaultdict
 EMPTY = '.'
 BLOCK = ' '
 
-# collection of words to be used for filling a crossword
-class Wordlist:
-    def __init__(self, words, db=None):
-        self.words = set(words)
-        self.added_words = set()
-
-        # mapping from wildcard patterns to lists of matching words, used for memoization
-        self.pattern_matches = {}
-
-        if db:
-            self.conn = sqlite3.connect(db)
-            self.cur = self.conn.cursor()
-
-    def __get_table_name(self, length):
-        return 'words' + str(length)
-    
-    def __get_column_name(self, index):
-        return 'letter' + str(index)
-    
-    def init_database(self):
-        words_by_length = defaultdict(set)
-
-        for word in self.words:
-            words_by_length[len(word)].add(word)
-
-        for length in words_by_length:
-            # initialize table for each length
-            table_name = self.__get_table_name(length)
-            column_names = ['word'] + [self.__get_column_name(index) for index in range(length)]
-            columns_str = ', '.join(column_names)
-            
-            self.cur.execute(f'CREATE TABLE IF NOT EXISTS {table_name} ({columns_str})')
-            
-            # add one row for each word
-            word_row = list((w, *tuple(w)) for w in words_by_length[length])
-            values_str = ', '.join('?' for _ in range(length + 1))
-            
-            self.cur.executemany(f'INSERT INTO {table_name} VALUES ({values_str})', word_row)
-
-            # create indices
-
-            for column_name in column_names:
-                index_name = table_name + column_name
-
-                self.cur.execute(f'CREATE INDEX IF NOT EXISTS {index_name} ON {table_name}({column_name})')
-    
-    def add_word(self, word):
-        if word not in self.words:
-            self.words.add(word)
-            self.added_words.add(word)
-    
-    def remove_word(self, word):
-        if word in self.words:
-            self.words.remove(word)
-        if word in self.added_words:
-            self.added_words.remove(word)
-    
-    def get_matches(self, pattern):
-        if pattern in self.pattern_matches:
-            return self.pattern_matches[pattern]
-
-        table_name = self.__get_table_name(len(pattern))
-        wheres = [f'{self.__get_column_name(i)} = \'{pattern[i]}\'' for i in range(len(pattern)) if pattern[i] != EMPTY]
-        where_str = 'WHERE ' + ' AND '.join(wheres) if wheres else ''
-
-        self.cur.execute(f'SELECT word FROM {table_name} {where_str}')
-
-        matches = [row[0] for row in self.cur.fetchall()]
-
-        self.pattern_matches[pattern] = matches
-
-        return matches
-
-
-# exception for when a duplicate word is found
-class DupeError(Exception):
-    def __init__(self, message='Dupe found!'):
-        self.message = message
-
-# exception for when an invalid word is created
-class BadWordError(Exception):
-    def __init__(self, message='Not a word!'):
-        self.message = message
-
 
 class Crossword:
     def __init__(self):
@@ -163,6 +79,7 @@ class Crossword:
     # returns whether or not the whole crossword is filled
     def is_filled(self):
         return all(self.is_word_filled(word) for word in self.words.values())
+
 
 class AmericanCrossword(Crossword):
     def __init__(self, rows, cols):
@@ -314,6 +231,80 @@ class AmericanCrossword(Crossword):
             # last word in column
             if word != '':
                 self.__add_slot(squares, word)
+
+
+class Wordlist:
+    """Collection of words to be used for filling a crossword"""
+    def __init__(self, words, db=None):
+        self.words = set(words)
+        self.added_words = set()
+
+        # mapping from wildcard patterns to lists of matching words, used for memoization
+        self.pattern_matches = {}
+
+        if db:
+            self.conn = sqlite3.connect(db)
+            self.cur = self.conn.cursor()
+
+    def __get_table_name(self, length):
+        return 'words' + str(length)
+    
+    def __get_column_name(self, index):
+        return 'letter' + str(index)
+    
+    def init_database(self):
+        words_by_length = defaultdict(set)
+
+        for word in self.words:
+            words_by_length[len(word)].add(word)
+
+        for length in words_by_length:
+            # initialize table for each length
+            table_name = self.__get_table_name(length)
+            column_names = ['word'] + [self.__get_column_name(index) for index in range(length)]
+            columns_str = ', '.join(column_names)
+            
+            self.cur.execute(f'CREATE TABLE IF NOT EXISTS {table_name} ({columns_str})')
+            
+            # add one row for each word
+            word_row = list((w, *tuple(w)) for w in words_by_length[length])
+            values_str = ', '.join('?' for _ in range(length + 1))
+            
+            self.cur.executemany(f'INSERT INTO {table_name} VALUES ({values_str})', word_row)
+
+            # create indices
+
+            for column_name in column_names:
+                index_name = table_name + column_name
+
+                self.cur.execute(f'CREATE INDEX IF NOT EXISTS {index_name} ON {table_name}({column_name})')
+    
+    def add_word(self, word):
+        if word not in self.words:
+            self.words.add(word)
+            self.added_words.add(word)
+    
+    def remove_word(self, word):
+        if word in self.words:
+            self.words.remove(word)
+        if word in self.added_words:
+            self.added_words.remove(word)
+    
+    def get_matches(self, pattern):
+        if pattern in self.pattern_matches:
+            return self.pattern_matches[pattern]
+
+        table_name = self.__get_table_name(len(pattern))
+        wheres = [f'{self.__get_column_name(i)} = \'{pattern[i]}\'' for i in range(len(pattern)) if pattern[i] != EMPTY]
+        where_str = 'WHERE ' + ' AND '.join(wheres) if wheres else ''
+
+        self.cur.execute(f'SELECT word FROM {table_name} {where_str}')
+
+        matches = [row[0] for row in self.cur.fetchall()]
+
+        self.pattern_matches[pattern] = matches
+
+        return matches
 
 
 class Filler(ABC):
