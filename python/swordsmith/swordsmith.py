@@ -151,14 +151,14 @@ class AmericanCrossword(Crossword):
         
         return across_words, down_words
     
-    def generate_grid_from_slots(self):
+    def __generate_grid_from_slots(self):
         for slot in self.slots:
             for i, square in enumerate(slot):
                 row, col = square
                 self.grid[row][col] = self.words[slot][i]
     
     def __str__(self):
-        self.generate_grid_from_slots()
+        self.__generate_grid_from_slots()
         return '\n'.join(' '.join([letter for letter in row]) for row in self.grid)
 
     # places block in certain square
