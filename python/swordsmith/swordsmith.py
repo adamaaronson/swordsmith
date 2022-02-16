@@ -354,7 +354,7 @@ class Filler(ABC):
 
         if match not in wordlist.words:
             return False # match is invalid word
-        if match in crossword.wordset:
+        if crossword.is_dupe(match):
             return False # match is dupe
         
         new_crossing_words = Filler.get_new_crossing_words(crossword, slot, match)
@@ -363,7 +363,7 @@ class Filler(ABC):
         for crossing_word in new_crossing_words:
             if crossword.is_word_filled(crossing_word) and crossing_word not in wordlist.words:
                 return False # created invalid word
-            if crossing_word in crossword.wordset:
+            if crossword.is_dupe(crossing_word):
                 return False # created dupe
         
         # make sure crossing words don't dupe each other
