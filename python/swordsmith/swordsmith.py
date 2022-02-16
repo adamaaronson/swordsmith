@@ -514,8 +514,8 @@ class MinlookFiller(Filler):
         return False
 
 
-WORDLIST_PATH_PREFIX = 'wordlist/'
-GRID_PATH_PREFIX = 'grid/'
+WORDLIST_FOLDER = 'wordlist/'
+GRID_FOLDER = 'grid/'
 
 def read_grid(filepath):
     return open(filepath).read().splitlines()
@@ -549,7 +549,11 @@ def get_filler(args):
         return None
 
 
-def run_test(args, wordlist_path_prefix, grid_path_prefix):
+def run_test(args):
+    dirname = os.path.dirname(__file__)
+    wordlist_path_prefix = os.path.join(dirname, WORDLIST_FOLDER)
+    grid_path_prefix = os.path.join(dirname, GRID_FOLDER)
+
     wordlist = read_wordlist(wordlist_path_prefix + args.wordlist_path, wordlist_path_prefix + args.database_path)
     wordlist.init_database()
     
@@ -577,10 +581,6 @@ def run_test(args, wordlist_path_prefix, grid_path_prefix):
 
 
 def main():
-    dirname = os.path.dirname(__file__)
-    wordlist_path_prefix = os.path.join(dirname, WORDLIST_PATH_PREFIX)
-    grid_path_prefix = os.path.join(dirname, GRID_PATH_PREFIX)
-
     parser = argparse.ArgumentParser(description='ye olde swordsmith engine')
     
     parser.add_argument('-w', '--wordlist', dest='wordlist_path', type=str,
@@ -599,7 +599,7 @@ def main():
                         default=5, help='k constant for minlook')
     args = parser.parse_args()
     
-    run_test(args, wordlist_path_prefix, grid_path_prefix)
+    run_test(args)
 
 
 if __name__ == "__main__":
