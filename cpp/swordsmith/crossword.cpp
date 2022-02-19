@@ -20,7 +20,21 @@ Crossword::Crossword(std::set<Slot> slots, std::map<Square, std::map<Slot, int>>
     squares_ = squares;
     words_ = words;
     wordset_ = wordset;
-    wordlist_ = wordlist;
+}
+
+/**
+ * Standard destructor for general crossword class.
+ */
+~Crossword() {
+
+    #warning "Update destructor to properly iterate through and delete sets, vectors, etc..."
+
+}
+
+std::ostream &operator<<(std::ostream &out, const Crossword &crossword)
+{
+    #warning "Add how we want the crossword to print"
+    return out;
 }
 
 /**
@@ -42,7 +56,16 @@ void Crossword::PutLetter(Slot slot, int i, char letter) {
     new_word = old_word[0:i] + letter + old_word[i+1:];
 
     // update wordset
-    //
+    if (wordset_.contains(old_word)) {
+        wordset_.erase(old_word);
+    }
+    
+    if (IsWordFilled(new_word)) {
+        wordset_.insert(new_word);
+    }
+
+    // update words for just this slot, not crossing slots
+    words_[slot] = new_word;
 
 }
 
@@ -51,42 +74,63 @@ void Crossword::PutLetter(Slot slot, int i, char letter) {
  * Defaults to adding the word to the wordlist if not already included.
  * Updates words in crossing slots using PutLetter().
  */
-void Crossword::PutWord(Word word, Slot slot, bool add_to_wordlist=true);
+void Crossword::PutWord(Word word, Slot slot, Wordlist wordlist_to_update=NULL) {
 
-/**
- * Returns the unfilled slot in the grid with the fewest matches.
- * Also returns the corresponding number of matches.
- * Used as a next-slot heuristic.
- */
-std::tuple<Slot, int> Crossword::FewestMatches();
+    if (wordlist_to_update) {
+        #warning "Jack: Might want to check if word is already in wordlist?"
+        wordlist_to_update.AddWord(word);
+    }
+
+    prev_word = words_[slot];
+
+    // place word in words map and wordset
+    words_[slot] = word;
+    if (IsWordFilled(prev_word)) {
+        wordset_.erase(prev_word);
+    }
+    if (IsWordFilled(word)) {
+        wordset_.insert(word);
+    }
+
+    // update crossing words
+    int i = 0;
+    for (Square square : slot) {
+        for (Slot crossing_slot : squares_[square]) {
+            if (crossing_slot == slot) {
+                #warning "update comparison or == operator for Slot class"
+                continue
+            }
+            PutLetter(crossing_slot, squares_[square][crossing_slot], word[i])
+        }
+        i++;
+    }
+
+}
 
 /**
  * Returns whether word is completely filled.
  */
-bool Crossword::IsWordFilled(Word word);
+bool Crossword::IsWordFilled(Word word) {
+    #warning "Include IsFilled function in word class"
+    return word.IsFilled();
+}
 
 /**
  * Returns whether word is a dupe (i.e. already in the wordset).
  */
-bool Crossword::IsDupe(Word word);
+bool Crossword::IsDupe(Word word) {
+    return wordset_.contains(word);
+}
 
 /**
  * Returns whether every square in the frid is non-empty.
  */
-bool Crossword::IsFilled();
+bool Crossword::IsFilled() {
+    for (std::map<Slot, Word>::iterator it = words_.begin(); it != words_.end(); ++it) {
+        if (~IsWordFilled(it->second)) {
+            return false;
+        }
+    }
+    return true;
+}
 
-/**
- * Returns words that would cross the given slot if the given word was placed into it.
- * Does not actually place word in slot.
- * Used for Minlook() heuristic.
- */
-std::vector<std::string> Crossword::GetCrossingWords(Slot slot, Word word=NULL);
-
-/**
- * Randomly looks at k possible matches.
- * Returns index of match that yields maximum number of crossing words if placed in slot.
- * Also returns the indices of matches that immediately cause inconsistencies.
- * Determines number of crossing words by computing the sum of logarithms of crossing match counts.
- * Used for Minlook() and arc-consistency heuristic.
- */
-std::tuple<int, std::vector<int>> Crossword::Minlook(Slot slot, int k, std::vector<int> matches);

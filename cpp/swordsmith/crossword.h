@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 #include <tuple>
+#include <ostream>
 
 using namespace swordsmith;
 
@@ -34,6 +35,11 @@ class Crossword {
                   std::map<Slot, Word> words, std::set<Word> wordset, Wordlist wordlist);
 
         /**
+         * Standard destructor for general crossword class.
+         */
+        ~Crossword();
+
+        /**
          * Places given letter at ith square of given slot.
          * NOTE: Does not update crossing slots.
          */
@@ -44,14 +50,7 @@ class Crossword {
          * Defaults to adding the word to the wordlist if not already included.
          * Updates words in crossing slots using PutLetter().
          */
-        void PutWord(Word word, Slot slot, bool add_to_wordlist=true);
-
-        /**
-         * Returns the unfilled slot in the grid with the fewest matches.
-         * Also returns the corresponding number of matches.
-         * Used as a next-slot heuristic.
-         */
-        std::tuple<Slot, int> FewestMatches();
+        void PutWord(Word word, Slot slot, bool wordlist_to_update=NULL);
 
         /**
          * Returns whether word is completely filled.
@@ -110,9 +109,7 @@ class Crossword {
          */
         std::set<Word> wordset_;
 
-        /**
-         * Contains all of the crossword's filled words.
-         */
-        Wordlist wordlist_;
-
 };
+
+#warning "Not sure if this is where the operator override should be"
+std::ostream &operator<<(std::ostream &out, const Crossword &crossword);
