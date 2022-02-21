@@ -8,8 +8,6 @@
 
 #include "filler.h"
 
-using namespace swordsmith;
-
 /**
  * This class implements a DFS approach for filling crossword grids.
  * DFS is derived from the Filler class.
