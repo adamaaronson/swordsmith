@@ -13,6 +13,10 @@
 #include <tuple>
 #include <ostream>
 
+#include "square.h"
+#include "word.h"
+#include "slot.h"
+
 using namespace swordsmith;
 
 /**
@@ -24,18 +28,18 @@ class Crossword {
     public:
 
         /**
-         * Standard constructor for general crossword class.
+         * Standard constructor for general Crossword class.
          */
         Crossword();
 
         /**
-         * Custom constructor for general crossword class.
+         * Custom constructor for general Crossword class.
          */
         Crossword(std::set<Slot> slots, std::map<Square, std::map<Slot, int>> squares,
                   std::map<Slot, Word> words, std::set<Word> wordset, Wordlist wordlist);
 
         /**
-         * Standard destructor for general crossword class.
+         * Standard destructor for general Crossword class.
          */
         ~Crossword();
 

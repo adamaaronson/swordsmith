@@ -10,7 +10,7 @@
 
 /**
  * This class implements a DFS approach for filling crossword grids.
- * DFS is derived from the Filler class.
+ * DFS is derived from the public Filler class.
  */
 class DFS : public Filler {
 
