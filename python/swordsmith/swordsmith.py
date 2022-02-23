@@ -27,8 +27,15 @@ class Crossword:
     def is_word_filled(word):
         """Returns whether word is completely filled"""
         return EMPTY not in word
+    
+    def clear(self):
+        """Resets the crossword by clearing all fields"""
+        self.squares.clear()
+        self.slots.clear()
+        self.words.clear()
+        self.wordset.clear()
 
-    def put_letter(self, slot, i, letter):
+    def __put_letter_in_slot(self, letter, slot, i):
         """Sets letter at the given index of the given slot"""
         old_word = self.words[slot]
         if i >= len(slot):
@@ -69,7 +76,7 @@ class Crossword:
                 if crossing_slot == slot:
                     continue
                 
-                self.put_letter(crossing_slot, self.squares[square][crossing_slot], word[i])
+                self.__put_letter_in_slot(word[i], crossing_slot, self.squares[square][crossing_slot])
 
     def is_dupe(self, word):
         """Returns whether or not a given word is already in the grid"""
@@ -160,14 +167,14 @@ class AmericanCrossword(Crossword):
     def __str__(self):
         self.__generate_grid_from_slots()
         return '\n'.join(' '.join([letter for letter in row]) for row in self.grid)
-
-    # places block in certain square
+    
     def put_block(self, row, col):
+        """Places block in certain square"""
         self.grid[row][col] = BLOCK
         self.__generate_slots_from_grid()
     
-    # places list of blocks in specified squares
     def put_blocks(self, coords):
+        """Places list of blocks in specified squares"""
         for row, col in coords:
             self.grid[row][col] = BLOCK
         self.__generate_slots_from_grid()
@@ -185,11 +192,7 @@ class AmericanCrossword(Crossword):
         self.words[slot] = word
 
     def __generate_slots_from_grid(self):
-        # reset slot mappings
-        self.squares.clear()
-        self.slots.clear()
-        self.words.clear()
-        self.wordset.clear()
+        self.clear()
 
         # generate across words
         for r in range(self.rows):
