@@ -22,16 +22,11 @@ class Crossword:
     
     def __str__(self):
         return '\n'.join(', '.join(str(square) for square in slot) + ': ' + self.words[slot] for slot in self.slots)
-
-    @staticmethod
-    def is_word_filled(word):
-        """Returns whether word is completely filled"""
-        return EMPTY not in word
     
     def clear(self):
         """Resets the crossword by clearing all fields"""
-        self.squares.clear()
         self.slots.clear()
+        self.squares.clear()
         self.words.clear()
         self.wordset.clear()
 
@@ -85,6 +80,11 @@ class Crossword:
     def is_filled(self):
         """Returns whether or not the whole crossword is filled"""
         return all(Crossword.is_word_filled(word) for word in self.words.values())
+    
+    @staticmethod
+    def is_word_filled(word):
+        """Returns whether word is completely filled"""
+        return EMPTY not in word
 
 
 class AmericanCrossword(Crossword):
