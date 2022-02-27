@@ -43,3 +43,7 @@ install_manifest.txt
 compile_commands.json
 CTestTestfile.cmake
 _deps
+
+swordsmith
+test
+tests_word
