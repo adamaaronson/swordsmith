@@ -21,16 +21,32 @@ Word::Word(std::string characters) {
 /**
  * Standard destructor implementation for Word class.
  */
-~Word::Word() {}
+Word::~Word() {}
 
 /**
  * Returns whether there are any empty characters or spaces in the word object.
  */
-Word::IsFilled() {
-    for (char c : characters_) {
-        if (c.isspace()) {
+bool Word::IsFilled() {
+
+    // if the word does not exist yet, return false
+    if (characters_.length() == 0) {return false;}
+
+    // if an empty character or space is detected, return false
+    for (int i = 0; i < characters_.length(); i++) {
+        char c = characters_[i];
+        if (isspace(c)) {
             return false;
         }
     }
+
+    // else, return true
     return true;
+
+}
+
+/**
+ * Returns string containing the stored word.
+ */
+std::string Word::getWord() {
+    return characters_;
 }

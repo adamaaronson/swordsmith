@@ -4,11 +4,16 @@
  * February 2022
  */
 
+#include "src/word.h"
+
 #include <iostream>
 
 int main() {
 
-    std::cout << "It works!" << std::endl;
+    Word test_word = Word("ItWorks!");
+    if (test_word.IsFilled()) {
+        std::cout << test_word.getWord() << std::endl;
+    }
 
     return 0;
 

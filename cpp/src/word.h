@@ -8,8 +8,6 @@
 
 #include <string>
 
-using namespace swordsmith;
-
 /**
  * Simple word class implementation.
  */
@@ -35,7 +33,12 @@ class Word {
         /**
          * Returns whether there are any empty characters or spaces in the word object.
          */
-        IsFilled();
+        bool IsFilled();
+
+        /**
+         * Returns string containing the stored word.
+         */
+        std::string getWord();
 
     private:
 
