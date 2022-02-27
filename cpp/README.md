@@ -13,7 +13,7 @@ make
 
 ## Testing
 
-From the 'cpp' folder, run the following commands:
+From the `cpp` folder, run the following commands:
 
 ```
 make test
