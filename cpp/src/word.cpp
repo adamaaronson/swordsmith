@@ -47,6 +47,6 @@ bool Word::IsFilled() {
 /**
  * Returns string containing the stored word.
  */
-std::string Word::getWord() {
+std::string Word::GetWord() {
     return characters_;
 }

@@ -38,7 +38,7 @@ class Word {
         /**
          * Returns string containing the stored word.
          */
-        std::string getWord();
+        std::string GetWord();
 
     private:
 

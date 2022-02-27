@@ -12,7 +12,7 @@ int main() {
 
     Word test_word = Word("ItWorks!");
     if (test_word.IsFilled()) {
-        std::cout << test_word.getWord() << std::endl;
+        std::cout << test_word.GetWord() << std::endl;
     }
 
     return 0;

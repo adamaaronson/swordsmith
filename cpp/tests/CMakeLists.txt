@@ -1,0 +1,1 @@
+add_library(tests_word tests_word.cpp)
