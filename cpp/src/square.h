@@ -8,8 +8,6 @@
 
 #include <tuple>
 
-using namespace swordsmith;
-
 /**
  * This class represents a Square within the Crossword framework.
  */
@@ -25,7 +23,7 @@ class Square {
         /**
          * Custom constructor for Square class.
          */
-        Square(std::tuple<int, int> coordinates, char letter);
+        Square(std::pair<int, int> coordinates, char letter);
 
         /**
          * Standard destructor for Square class.

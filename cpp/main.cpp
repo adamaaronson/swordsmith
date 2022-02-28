@@ -5,6 +5,7 @@
  */
 
 #include "src/word.h"
+#include "src/square.h"
 
 #include <iostream>
 
