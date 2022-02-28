@@ -509,19 +509,13 @@ class DFSBackjumpFiller(Filler):
             is_filled, failed_slot = self.fill(crossword, wordlist, animate)
             if is_filled:
                 return True, None
-            else:
-                if failed_slot not in crossword.crossings[slot]:
-                    # don't change this word, keep backjumping
-                    # might want to change this
-                    crossword.put_word(previous_word, slot)
-                    return False, failed_slot
-                else:
-                    # if it is in the crossings, try another word
-                    pass
+            if failed_slot not in crossword.crossings[slot]:
+                # undo this word, keep backjumping
+                crossword.put_word(previous_word, slot)
+                return False, failed_slot
 
         # if no match works, restore previous word
         crossword.put_word(previous_word, slot)
-        
         return False, slot
 
     
@@ -584,6 +578,72 @@ class MinlookFiller(Filler):
         return False
 
 
+class MinlookBackjumpFiller(Filler):
+    """Fills the crossword using a dfs algorithm with minlook heuristic:
+    - keeps selecting unfilled slot with fewest possible matches
+    - considers k random matching word, chooses word with the most possible crossing words (product of # in each slot)
+    - backtracks if there is a slot with no matches
+
+    Each iteration returns (is_filled, failed_slot)
+    """
+    
+    def __init__(self, k):
+        self.k = k
+
+    def fill(self, crossword, wordlist, animate):
+        if animate:
+            utils.clear_terminal()
+            print(crossword)
+        
+        # if the grid is filled, succeed
+        if crossword.is_filled():
+            return True, None
+
+        # choose slot with fewest matches
+        slot, num_matches = Filler.fewest_matches(crossword, wordlist)
+
+        # if some slot has zero matches, fail
+        if num_matches == 0:
+            return False, slot
+        
+        # iterate through all possible matches in the fewest-match slot
+        previous_word = crossword.words[slot]
+        matches = wordlist.get_matches(crossword.words[slot])
+
+        # randomly shuffle matches
+        shuffle(matches)
+
+        while matches:
+            match_index, failed_indices = Filler.minlook(crossword, wordlist, slot, matches, self.k)
+
+            if match_index != -1:
+                match = matches[match_index]
+            
+            # remove failed matches and chosen match
+            matches = [matches[i] for i in range(len(matches)) if i != match_index and i not in failed_indices]
+            
+            # if no matches were found, try another batch if possible
+            if match_index == -1:
+                continue
+
+            if not Filler.is_valid_match(crossword, wordlist, slot, match):
+                continue
+
+            crossword.put_word(match, slot)
+            
+            is_filled, failed_slot = self.fill(crossword, wordlist, animate)
+            if is_filled:
+                return True, None
+            if failed_slot not in crossword.crossings[slot]:
+                # undo this word, keep backjumping
+                crossword.put_word(previous_word, slot)
+                return False, failed_slot
+        
+        # if no match works, restore previous word
+        crossword.put_word(previous_word, slot)
+        return False, slot
+
+
 WORDLIST_FOLDER = 'wordlist/'
 GRID_FOLDER = 'grid/'
 
@@ -618,6 +678,8 @@ def get_filler(args):
         return DFSBackjumpFiller()
     elif args.strategy == 'minlook':
         return MinlookFiller(args.k)
+    elif args.strategy == 'mlb':
+        return MinlookBackjumpFiller(args.k)
     else:
         return None
 
@@ -667,7 +729,7 @@ def main():
     parser.add_argument('-a', '--animate',
                         default=False, action='store_true', help='whether to animate grid filling')
     parser.add_argument('-s', '--strategy', dest='strategy', type=str,
-                        default='dfs', help='which algorithm to run: dfs, minlook')
+                        default='dfs', help='which algorithm to run: dfs, dfsb, minlook, mlb')
     parser.add_argument('-k', '--k', dest='k', type=int,
                         default=5, help='k constant for minlook')
     args = parser.parse_args()
