@@ -41,7 +41,10 @@ If two slots contain the same square, their words "cross" at that square and the
 	- Set of slots in the crossword
 - `squares`
     - Dictionary of dictionaries that keeps track of which slots contain which squares
-    - Square => slot => index of square within slot
+    - square => slot => index of square within slot
+- `crossings`
+    - Dictionary of dictionaries that keeps track of which slots cross each other
+    - slot => slot => square where the slots cross
 - `words`
 	- Dictionary mapping each slot to its corresponding word
 	- Updated as grid is filled

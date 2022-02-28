@@ -8,17 +8,18 @@ import os
 
 from abc import ABC, abstractmethod
 from random import shuffle
-from collections import namedtuple, defaultdict
+from collections import defaultdict
 
 EMPTY = '.'
 BLOCK = ' '
 
 class Crossword:
     def __init__(self):
-        self.slots = set()                                      # set of slots in the puzzle
-        self.squares = defaultdict(lambda: defaultdict(int))    # square => slots that contain it => index of square in slot
-        self.words = {}                                         # slot => word in that slot
-        self.wordset = set()                                    # set of filled words in puzzle
+        self.slots = set()                                          # set of slots in the puzzle
+        self.squares = defaultdict(lambda: defaultdict(int))        # square => slots that contain it => index of square in slot
+        self.crossings = defaultdict(lambda: defaultdict(tuple))    # slot => slots that cross it => square where they cross
+        self.words = {}                                             # slot => word in that slot
+        self.wordset = set()                                        # set of filled words in puzzle
     
     def __str__(self):
         return '\n'.join(', '.join(str(square) for square in slot) + ': ' + self.words[slot] for slot in self.slots)
@@ -27,8 +28,16 @@ class Crossword:
         """Resets the crossword by clearing all fields"""
         self.slots.clear()
         self.squares.clear()
+        self.crossings.clear()
         self.words.clear()
         self.wordset.clear()
+    
+    def generate_crossings(self):
+        for square in self.squares:
+            for slot in self.squares[square]:
+                for crossing_slot in self.squares[square]:
+                    if slot != crossing_slot:
+                        self.crossings[slot][crossing_slot] = square
 
     def __put_letter_in_slot(self, letter, slot, i):
         """Sets letter at the given index of the given slot"""
@@ -66,12 +75,13 @@ class Crossword:
             self.wordset.add(word)
         
         # update crossing words
-        for i, square in enumerate(slot):
-            for crossing_slot in self.squares[square]:
-                if crossing_slot == slot:
-                    continue
-                
-                self.__put_letter_in_slot(word[i], crossing_slot, self.squares[square][crossing_slot])
+        for crossing_slot in self.crossings[slot]:
+            square = self.crossings[slot][crossing_slot]
+
+            index = self.squares[square][slot]
+            crossing_index = self.squares[square][crossing_slot]
+
+            self.__put_letter_in_slot(word[index], crossing_slot, crossing_index)
 
     def is_dupe(self, word):
         """Returns whether or not a given word is already in the grid"""
@@ -233,6 +243,8 @@ class AmericanCrossword(Crossword):
             # last word in column
             if word != '':
                 self.__add_slot(squares, word)
+        
+        self.generate_crossings()
 
 
 class Wordlist:
@@ -321,23 +333,21 @@ class Filler(ABC):
         """Returns list of new words that cross the given slot, given a word to theoretically put in the slot. Excludes slots that were already filled"""
         new_crossing_words = []
 
-        for i, square in enumerate(slot):
-            letter = word[i]
+        for crossing_slot in crossword.crossings[slot]:
+            square = crossword.crossings[slot][crossing_slot]
+            index = crossword.squares[square][slot]
+            letter = word[index]
 
-            for crossing_slot in crossword.squares[square]:
-                if crossing_slot == slot:
-                    # this is the slot itself
-                    continue
+            crossing_index = crossword.squares[square][crossing_slot]
+            crossing_word = crossword.words[crossing_slot]
 
-                index = crossword.squares[square][crossing_slot]
-                crossing_word = crossword.words[crossing_slot]
-                new_crossing_word = crossing_word[:index] + letter + crossing_word[index + 1:]
+            new_crossing_word = crossing_word[:crossing_index] + letter + crossing_word[crossing_index + 1:]
 
-                if Crossword.is_word_filled(crossing_word) and crossing_word == new_crossing_word:
-                    # this word was already there, ignore
-                    continue
+            if Crossword.is_word_filled(crossing_word) and crossing_word == new_crossing_word:
+                # this word was already there, ignore
+                continue
 
-                new_crossing_words.append(new_crossing_word)
+            new_crossing_words.append(new_crossing_word)
         
         return new_crossing_words
     
