@@ -604,10 +604,11 @@ def read_wordlist(filepath, dbpath, scored=True, min_score=50):
     return Wordlist(words, dbpath)
 
 
-def log_times(times):
-    print(f'Took {sum(times) / len(times)} seconds on average over {len(times)} crosswords.')
-    print(f'Min time: {min(times)} seconds')
-    print(f'Max time: {max(times)} seconds')
+def log_times(times, strategy):
+    print(f'Filled {len(times)} crosswords using {strategy}')
+    print(f'Min time: {min(times):.4f} seconds')
+    print(f'Avg time: {sum(times) / len(times):.4f} seconds')
+    print(f'Max time: {max(times):.4f} seconds')
 
 
 def get_filler(args):
@@ -647,9 +648,9 @@ def run_test(args):
         if not args.animate:
             print(crossword)
         
-        print(f'Took {duration} seconds to fill {crossword.cols}x{crossword.rows} crossword.')
+        print(f'\nFilled {crossword.cols}x{crossword.rows} crossword in {duration:.4f} seconds\n')
     
-    log_times(times)
+    log_times(times, args.strategy)
 
 
 def main():
