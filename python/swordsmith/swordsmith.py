@@ -467,6 +467,63 @@ class DFSFiller(Filler):
 
         return False
 
+
+class DFSBackjumpFiller(Filler):
+    """Fills the crossword using a naive DFS algorithm:
+    
+    - keeps selecting unfilled slot with fewest possible matches
+    - randomly chooses matching word for that slot
+    - backtracks if there is a slot with no matches
+    
+    Each iteration returns (is_filled, failed_slot)"""
+
+    def fill(self, crossword, wordlist, animate):
+        if animate:
+            utils.clear_terminal()
+            print(crossword)
+
+        # if the grid is filled, succeed if every word is valid and otherwise fail
+        if crossword.is_filled():
+            return True, None
+
+        # choose slot with fewest matches
+        slot, num_matches = Filler.fewest_matches(crossword, wordlist)
+
+        # if some slot has zero matches, fail
+        if num_matches == 0:
+            return False, slot
+        
+        # iterate through all possible matches in the fewest-match slot
+        previous_word = crossword.words[slot]
+        matches = wordlist.get_matches(crossword.words[slot])
+
+        # randomly shuffle matches
+        shuffle(matches)
+        
+        for match in matches:
+            if not Filler.is_valid_match(crossword, wordlist, slot, match):
+                continue
+
+            crossword.put_word(match, slot)
+
+            is_filled, failed_slot = self.fill(crossword, wordlist, animate)
+            if is_filled:
+                return True, None
+            else:
+                if failed_slot not in crossword.crossings[slot]:
+                    # don't change this word, keep backjumping
+                    # might want to change this
+                    crossword.put_word(previous_word, slot)
+                    return False, failed_slot
+                else:
+                    # if it is in the crossings, try another word
+                    pass
+
+        # if no match works, restore previous word
+        crossword.put_word(previous_word, slot)
+        
+        return False, slot
+
     
 class MinlookFiller(Filler):
     """Fills the crossword using a dfs algorithm with minlook heuristic:
@@ -556,6 +613,8 @@ def log_times(times):
 def get_filler(args):
     if args.strategy == 'dfs':
         return DFSFiller()
+    elif args.strategy == 'dfsb':
+        return DFSBackjumpFiller()
     elif args.strategy == 'minlook':
         return MinlookFiller(args.k)
     else:
