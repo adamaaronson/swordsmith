@@ -438,12 +438,6 @@ class DFSFiller(Filler):
         # if the grid is filled, succeed if every word is valid and otherwise fail
         if crossword.is_filled():
             return True
-        else:
-            filled_words = len([word for word in crossword.words.values() if Crossword.is_word_filled(word)])
-            if filled_words == 78:
-                print(crossword.words)
-                print(len(crossword.words))
-                return True
 
         # choose slot with fewest matches
         slot, num_matches = Filler.fewest_matches(crossword, wordlist)
