@@ -9,7 +9,10 @@
 /**
  * Standard constructor for Square class.
  */
-Square::Square() {}
+Square::Square() {
+    letter_ = ' ';
+    coordinates_ = std::make_tuple(0, 0);
+}
 
 /**
  * Custom constructor for Square class.
