@@ -23,12 +23,22 @@ class Square {
         /**
          * Custom constructor for Square class.
          */
-        Square(std::pair<int, int> coordinates, char letter);
+        Square(std::tuple<int, int> coordinates, char letter);
 
         /**
          * Standard destructor for Square class.
          */
         ~Square();
+
+        /**
+         * Returns the coordinates of the Square.
+         */
+        std::tuple<int, int> GetCoordinates();
+
+        /**
+         * Returns the letter that the Square contains.
+         */
+        char GetLetter();
 
     private:
 

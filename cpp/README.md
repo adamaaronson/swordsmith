@@ -13,7 +13,7 @@ make
 
 ## Notes
 
-In order to run CMake with the latest C++ version (C++20, run the following inside of the `cpp/` folder.
+In order to run CMake with the latest C++ version (C++20), run the following inside of the `cpp/` folder.
 
 ```
 cmake -B . -S . -DCMAKE_CXX_STANDARD=20

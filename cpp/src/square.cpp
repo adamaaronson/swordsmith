@@ -22,4 +22,18 @@ Square::Square(std::tuple<int, int> coordinates, char letter) {
 /**
  * Standard destructor for Square class.
  */
-~Square::Square();
+Square::~Square() {}
+
+/**
+ * Returns the coordinates of the Square.
+ */
+std::tuple<int, int> Square::GetCoordinates() {
+    return coordinates_;
+}
+
+/**
+ * Returns the letter that the Square contains.
+ */
+char Square::GetLetter() {
+    return letter_;
+}

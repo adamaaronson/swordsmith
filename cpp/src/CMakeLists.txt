@@ -1,2 +1,3 @@
-add_library(word word.cpp word.h)
-add_library(square square.cpp square.h)
+# CREATE LIBRARIES
+add_library(square square.cpp)
+add_library(word word.cpp)
