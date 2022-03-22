@@ -40,6 +40,11 @@ class Word {
          */
         std::string GetWord();
 
+        /**
+         * Returns length of word.
+         */
+        int GetLength();
+
     private:
 
         /**

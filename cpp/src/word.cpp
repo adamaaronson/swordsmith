@@ -50,3 +50,10 @@ bool Word::IsFilled() {
 std::string Word::GetWord() {
     return characters_;
 }
+
+/**
+ * Returns length of word.
+ */
+int Word::GetLength() {
+    return length(characters_);
+}
