@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include <tuple>
+#include <vector>
 
-using namespace swordsmith;
+#include "square.h"
 
 /**
  * This class implements the Slot framework.
@@ -28,6 +28,11 @@ class Slot {
         Slot(int length);
 
         /**
+         * Second custom constructor for the Slot class.
+         */
+        Slot(int length, std::vector<Square> squares);
+
+        /**
          * Standard destructor for the Slot class.
          */
         ~Slot();
@@ -37,6 +42,16 @@ class Slot {
          */
         int GetLength();
 
+        /**
+         * Returns the stored vector of squares.
+         */
+        std::vector<Square> GetSquares();
+
+        /**
+         * Add square to index of slot.
+         */
+        void AddSquare(int index, Square square);
+
     private:
 
         /**
@@ -45,4 +60,4 @@ class Slot {
         int length_;
         std::vector<Square> squares_;
 
-}
+};

@@ -17,8 +17,6 @@
 #include "word.h"
 #include "slot.h"
 
-using namespace swordsmith;
-
 /**
  * This class implements a general crossword framework.
  * The american crossword class is derived from this base class.
@@ -67,7 +65,7 @@ class Crossword {
         bool IsDupe(Word word);
 
         /**
-         * Returns whether every square in the frid is non-empty.
+         * Returns whether every square in the grid is non-empty.
          */
         bool IsFilled();
 

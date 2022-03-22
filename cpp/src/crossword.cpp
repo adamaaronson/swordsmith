@@ -123,7 +123,7 @@ bool Crossword::IsDupe(Word word) {
 }
 
 /**
- * Returns whether every square in the frid is non-empty.
+ * Returns whether every square in the grid is non-empty.
  */
 bool Crossword::IsFilled() {
     for (std::map<Slot, Word>::iterator it = words_.begin(); it != words_.end(); ++it) {
