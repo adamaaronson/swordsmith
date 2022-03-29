@@ -10,7 +10,9 @@
  * Standard constructor for Square class.
  */
 Square::Square() {
-    letter_ = ' ';
+    #warning "How do we want to store EMPTY and BLOCK? Globally or locally?"
+    EMPTY = '.';
+    letter_ = EMPTY;
     coordinates_ = std::make_tuple(0, 0);
 }
 
@@ -18,6 +20,7 @@ Square::Square() {
  * Custom constructor for Square class.
  */
 Square::Square(std::tuple<int, int> coordinates, char letter) {
+    EMPTY = '.';
     coordinates_ = coordinates;
     letter_ = letter;
 }

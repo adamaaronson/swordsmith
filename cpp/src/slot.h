@@ -52,6 +52,16 @@ class Slot {
          */
         void AddSquare(int index, Square square);
 
+        /**
+         * Return whether the slot is an across slot.
+         */
+        bool IsAcross();
+
+        /**
+         * Return whether the slot is down slot.
+         */
+        bool IsDown();
+
     private:
 
         /**
@@ -59,5 +69,7 @@ class Slot {
          */
         int length_;
         std::vector<Square> squares_;
+        bool across_;
+        bool down_;
 
 };

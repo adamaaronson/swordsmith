@@ -4,6 +4,8 @@
  * March 2022
  */
 
+#include <sqlite3.h>
+
 #include "wordlist.h"
 
 /**

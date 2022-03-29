@@ -15,7 +15,7 @@ Crossword::Crossword() {}
 /**
  * Custom constructor for general crossword class.
  */
-Crossword::Crossword(std::set<Slot> slots, std::map<Square, std::map<Slot, int>> squares, std::map<Slot, Word> words, std::set<Word> wordset, Wordlist wordlist) {
+Crossword::Crossword(std::set<Slot> slots, std::map<Square*, std::map<Slot, int>> squares, std::map<Slot, Word> words, std::set<Word> wordset, Wordlist wordlist) {
     slots_ = slots;
     squares_ = squares;
     words_ = words;
@@ -27,7 +27,7 @@ Crossword::Crossword(std::set<Slot> slots, std::map<Square, std::map<Slot, int>>
  */
 ~Crossword() {
 
-    #warning "Update destructor to properly iterate through and delete sets, vectors, etc..."
+    #warning "Update destructor to properly iterate through and delete map containing pointer to Squares"
 
 }
 
@@ -94,7 +94,7 @@ void Crossword::PutWord(Word word, Slot slot, Wordlist wordlist_to_update=NULL) 
 
     // update crossing words
     int i = 0;
-    for (Square square : slot) {
+    for (Square * square : slot) {
         for (Slot crossing_slot : squares_[square]) {
             if (crossing_slot == slot) {
                 #warning "update comparison or == operator for Slot class"
@@ -111,7 +111,6 @@ void Crossword::PutWord(Word word, Slot slot, Wordlist wordlist_to_update=NULL) 
  * Returns whether word is completely filled.
  */
 bool Crossword::IsWordFilled(Word word) {
-    #warning "Include IsFilled function in word class"
     return word.IsFilled();
 }
 

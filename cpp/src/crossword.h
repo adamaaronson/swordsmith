@@ -33,7 +33,7 @@ class Crossword {
         /**
          * Custom constructor for general Crossword class.
          */
-        Crossword(std::set<Slot> slots, std::map<Square, std::map<Slot, int>> squares,
+        Crossword(std::set<Slot> slots, std::map<Square*, std::map<Slot, int>> squares,
                   std::map<Slot, Word> words, std::set<Word> wordset, Wordlist wordlist);
 
         /**
@@ -96,7 +96,7 @@ class Crossword {
          * Map of maps that keeps track of which slots contain which squares.
          * Maps from square to map, which maps from slot to index of square within slot.
          */
-        std::map<Square, std::map<Slot, int>> squares_;
+        std::map<Square*, std::map<Slot, int>> squares_;
 
         /**
          * Maps each slot to its corresponding word.

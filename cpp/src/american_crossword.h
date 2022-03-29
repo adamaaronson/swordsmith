@@ -9,6 +9,12 @@
 #include <vector>
 #include <tuple>
 #include <map>
+#include <set>
+
+#include "word.h"
+#include "slot.h"
+#include "square.h"
+#include "crossword.h"
 
 using namespace swordsmith;
 
@@ -38,7 +44,7 @@ class AmericanCrossword : public Crossword {
         /**
          * Returns American Crossword from 2D array of characters.
          */
-        Crossword FromGrid(std::vector<std::vector<Square>> grid);
+        AmericanCrossword FromGrid(std::vector<std::vector<Square>> grid);
 
         /**
          * Returns whether the slot is an across slot.
@@ -87,6 +93,8 @@ class AmericanCrossword : public Crossword {
          */
         int rows_;
         int cols_;
-        std::vector<std::vector<Square>> grid_;
+        std::vector<std::vector<Square*>*>* grid_;
+        char EMPTY;
+        char BLOCK;
 
 }

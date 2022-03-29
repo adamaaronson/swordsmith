@@ -16,8 +16,10 @@ Slot::Slot() {
 /**
  * Custom constructor for the Slot class.
  */
-Slot::Slot(int length) {
+Slot::Slot(int length, bool across, bool down) {
     length_ = length;
+    across_ = across;
+    down_ = down;
     squares_.reserve(length);
 }
 
@@ -54,4 +56,18 @@ std::vector<Square> Slot::GetSquares() {
  */
 void Slot::AddSquare(int index, Square square) {
     squares_[index] = square;
+}
+
+/**
+ * Return whether the slot is an across slot.
+ */
+bool IsAcross() {
+    return across_;
+}
+
+/**
+ * Return whether the slot is down slot.
+ */
+bool IsDown() {
+    return down_;
 }

@@ -47,5 +47,6 @@ class Square {
          */
         std::tuple<int, int> coordinates_;
         char letter_;
+        char EMPTY;
 
 };
