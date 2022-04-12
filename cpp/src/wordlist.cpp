@@ -8,6 +8,8 @@
 
 #include "wordlist.h"
 
+#warning "Should the stored private member variables be pointers?"
+
 /**
  * Standard constructor for general Wordlist class.
  */
