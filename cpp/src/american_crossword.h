@@ -1,6 +1,6 @@
 /**
  * @file american_crossword.h
- * Jack Joshi, Adam Aaronson, JT Kirages, Mark Bauer
+ * Jack Joshi, Adam Aaronson
  * February 2022
  */
 
@@ -15,6 +15,7 @@
 #include "slot.h"
 #include "square.h"
 #include "crossword.h"
+#include "utils.h"
 
 using namespace swordsmith;
 
@@ -94,7 +95,5 @@ class AmericanCrossword : public Crossword {
         int rows_;
         int cols_;
         std::vector<std::vector<Square*>*>* grid_;
-        char EMPTY;
-        char BLOCK;
 
 }

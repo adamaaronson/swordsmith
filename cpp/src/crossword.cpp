@@ -1,6 +1,6 @@
 /**
  * @file crossword.cpp
- * Jack Joshi, Adam Aaronson, JT Kirages, Mark Bauer
+ * Jack Joshi, Adam Aaronson
  * February 2022
  */
 

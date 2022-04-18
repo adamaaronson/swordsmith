@@ -1,6 +1,6 @@
 /**
  * @file wordlist.cpp
- * Jack Joshi, Adam Aaronson, JT Kirages, Mark Bauer
+ * Jack Joshi, Adam Aaronson
  * March 2022
  */
 

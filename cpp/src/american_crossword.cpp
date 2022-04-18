@@ -9,11 +9,7 @@
 /**
  * Standard constructor for inherited American Crossword class.
  */
-AmericanCrossword::AmericanCrossword() {
-    #warning "how do we want to store the EMPTY and BLOCK characters? Globally or locally?"
-    EMPTY = '.';
-    BLOCK = ' ';
-}
+AmericanCrossword::AmericanCrossword() {}
 
 /**
  * Custom constructor for inherited American Crossword class.
@@ -22,9 +18,6 @@ AmericanCrossword::AmericanCrossword(int rows, int cols) {
 
     rows_ = rows;
     cols_ = cols;
-
-    EMPTY = '.';
-    BLOCK = ' ';
 
     grid_->reserve(rows);
     for (int r : r < rows; r++) {
