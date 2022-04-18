@@ -7,6 +7,7 @@
 #pragma once
 
 #include "filler.h"
+#include "utils.h"
 
 /**
  * This class implements a DFS approach for filling crossword grids.
