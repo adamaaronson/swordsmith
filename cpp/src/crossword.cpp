@@ -33,7 +33,16 @@ Crossword::Crossword(std::set<Slot> slots, std::map<Square*, std::map<Slot, int>
 
 std::ostream &operator<<(std::ostream &out, const Crossword &crossword)
 {
-    #warning "Add how we want the crossword to print"
+    #warning "not implemented accurately yet"
+    std::string out = "";
+    for (Slot * slot : slots_) {
+        out = out + ": " + words_[slot];
+        for (Square * square : slot) {
+            std::string square_char(1, square->GetLetter());
+            out = out + square_char;
+        }
+        out = out + ", \n"
+    }
     return out;
 }
 
@@ -77,7 +86,6 @@ void Crossword::PutLetter(Slot slot, int i, char letter) {
 void Crossword::PutWord(Word word, Slot slot, Wordlist wordlist_to_update=NULL) {
 
     if (wordlist_to_update) {
-        #warning "Jack: Might want to check if word is already in wordlist?"
         wordlist_to_update.AddWord(word);
     }
 
@@ -95,9 +103,9 @@ void Crossword::PutWord(Word word, Slot slot, Wordlist wordlist_to_update=NULL) 
     // update crossing words
     int i = 0;
     for (Square * square : slot) {
-        for (Slot crossing_slot : squares_[square]) {
+        for (Slot * crossing_slot : squares_[square]) {
             if (crossing_slot == slot) {
-                #warning "update comparison or == operator for Slot class"
+                #warning "Inputted slot should be a pointer"
                 continue
             }
             PutLetter(crossing_slot, squares_[square][crossing_slot], word[i])
