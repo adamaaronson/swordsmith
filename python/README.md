@@ -15,7 +15,6 @@ Using any of these optional command line flags:
 | Flag | Short | Description |
 |------------|----|-----------------------|
 | --wordlist WORDLIST_PATH | -w | filepath for wordlist |
-| --database DATABASE_PATH | -d | filepath for database |
 | --grid GRID_PATH | -g | filepath for grid     |
 | --num_trials NUM_TRIALS | -t | number of grids to try filling |
 | --k K | -k | k constant for minlook |
@@ -120,20 +119,19 @@ Contains the collection of words to be used while filling a crossword, as well a
 - `added_words`
 	- Set of words that weren't originally in the wordlist, but were added while the program was running
 - `pattern_matches`
-	- Dictionary that holds previously searched patterns matched with the database
-- `conn` and `cur`
-	- Connection and cursor to interface with the sqlite database of words
+	- Dictionary that holds matches for previously searched patterns
+- `indices`
+    - Dictionary mapping length to index to letter to set of words
+    - Used for simulating database indexing
+- `lengths`
+    - Dictionary mapping length to words
+    - Used for finding matches for completely unfilled slots
 
 ### Methods
 - `add_word(self, word)`
 	- Adds `word` to the wordlist
 - `remove_word(self, word)`
 	- Removes `word` from the wordlist
-- `init_database(self)`
-	- Initializes sqlite database of words
-	- One table for each word length
-		- One row for each word
-		- `i`th column represents the letter at the `i`th index of the word
 - `get_matches(self, pattern)`
 	- Returns list of words in the wordlist that match `pattern`
 	- `pattern` is a string with any number of wildcard (`EMPTY`) characters
