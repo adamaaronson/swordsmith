@@ -1,6 +1,5 @@
 import utils
 
-import sqlite3
 import math
 import argparse
 import time
@@ -249,74 +248,61 @@ class AmericanCrossword(Crossword):
 
 class Wordlist:
     """Collection of words to be used for filling a crossword"""
-    def __init__(self, words, db=None):
+    def __init__(self, words):
         self.words = set(words)
         self.added_words = set()
 
         # mapping from wildcard patterns to lists of matching words, used for memoization
         self.pattern_matches = {}
 
-        if db:
-            self.conn = sqlite3.connect(db)
-            self.cur = self.conn.cursor()
+        # mapping from length to index to letter to wordset
+        # this stores an n-letter word n times, so might be memory intensive but we'll see
+        self.indices = defaultdict(lambda: defaultdict(lambda: defaultdict(set)))
 
-    def __get_table_name(self, length):
-        return 'words' + str(length)
-    
-    def __get_column_name(self, index):
-        return 'letter' + str(index)
-    
-    def init_database(self):
-        words_by_length = defaultdict(set)
+        # mapping from length to wordset
+        self.lengths = defaultdict(set)
 
+        self.__init_indices()
+    
+    def __init_indices(self):
         for word in self.words:
-            words_by_length[len(word)].add(word)
-
-        for length in words_by_length:
-            # initialize table for each length
-            table_name = self.__get_table_name(length)
-            column_names = ['word'] + [self.__get_column_name(index) for index in range(length)]
-            columns_str = ', '.join(column_names)
-            
-            self.cur.execute(f'CREATE TABLE IF NOT EXISTS {table_name} ({columns_str})')
-            
-            # add one row for each word
-            word_row = list((w, *tuple(w)) for w in words_by_length[length])
-            values_str = ', '.join('?' for _ in range(length + 1))
-            
-            self.cur.executemany(f'INSERT INTO {table_name} VALUES ({values_str})', word_row)
-
-            # create indices
-
-            for column_name in column_names:
-                index_name = table_name + column_name
-
-                self.cur.execute(f'CREATE INDEX IF NOT EXISTS {index_name} ON {table_name}({column_name})')
+            self.__add_word_to_indices(word)
+    
+    def __add_word_to_indices(self, word):
+        length = len(word)
+        self.lengths[length].add(word)
+        for i, letter in enumerate(word):
+            self.indices[length][i][letter].add(word)
+    
+    def __remove_word_from_indices(self, word):
+        length = len(word)
+        self.lengths[length].remove(word)
+        for i, letter in enumerate(word):
+            self.indices[length][i][letter].remove(word)
     
     def add_word(self, word):
         if word not in self.words:
             self.words.add(word)
             self.added_words.add(word)
+            self.__add_word_to_indices(word)
     
     def remove_word(self, word):
         if word in self.words:
             self.words.remove(word)
+            self.__remove_word_from_indices(word)
         if word in self.added_words:
             self.added_words.remove(word)
     
     def get_matches(self, pattern):
         if pattern in self.pattern_matches:
             return self.pattern_matches[pattern]
-
-        table_name = self.__get_table_name(len(pattern))
-        wheres = [f'{self.__get_column_name(i)} = \'{pattern[i]}\'' for i in range(len(pattern)) if pattern[i] != EMPTY]
-        where_str = 'WHERE ' + ' AND '.join(wheres) if wheres else ''
-
-        self.cur.execute(f'SELECT word FROM {table_name} {where_str}')
-
-        matches = [row[0] for row in self.cur.fetchall()]
-
-        self.pattern_matches[pattern] = matches
+        
+        length = len(pattern)
+        indices = [self.indices[length][i][letter] for i, letter in enumerate(pattern) if letter != EMPTY]
+        if indices:
+            matches = set.intersection(*indices)
+        else:
+            matches = self.lengths[length]
 
         return matches
 
@@ -451,6 +437,7 @@ class DFSFiller(Filler):
         matches = wordlist.get_matches(crossword.words[slot])
 
         # randomly shuffle matches
+        matches = list(matches)
         shuffle(matches)
 
         for match in matches:
@@ -498,6 +485,7 @@ class DFSBackjumpFiller(Filler):
         matches = wordlist.get_matches(crossword.words[slot])
 
         # randomly shuffle matches
+        matches = list(matches)
         shuffle(matches)
         
         for match in matches:
@@ -550,6 +538,7 @@ class MinlookFiller(Filler):
         matches = wordlist.get_matches(crossword.words[slot])
 
         # randomly shuffle matches
+        matches = list(matches)
         shuffle(matches)
 
         while matches:
@@ -611,6 +600,7 @@ class MinlookBackjumpFiller(Filler):
         matches = wordlist.get_matches(crossword.words[slot])
 
         # randomly shuffle matches
+        matches = list(matches)
         shuffle(matches)
 
         while matches:
@@ -651,7 +641,7 @@ def read_grid(filepath):
     return open(filepath).read().splitlines()
 
 
-def read_wordlist(filepath, dbpath, scored=True, min_score=50):
+def read_wordlist(filepath, scored=True, min_score=50):
     with open(filepath, 'r') as f:
         words = f.readlines()
 
@@ -661,7 +651,7 @@ def read_wordlist(filepath, dbpath, scored=True, min_score=50):
         words = [w.split(';') for w in words]
         words = [w[0] for w in words if len(w) == 1 or int(w[1]) >= min_score]
     
-    return Wordlist(words, dbpath)
+    return Wordlist(words)
 
 
 def log_times(times, strategy):
@@ -689,8 +679,7 @@ def run_test(args):
     wordlist_path_prefix = os.path.join(dirname, WORDLIST_FOLDER)
     grid_path_prefix = os.path.join(dirname, GRID_FOLDER)
 
-    wordlist = read_wordlist(wordlist_path_prefix + args.wordlist_path, wordlist_path_prefix + args.database_path)
-    wordlist.init_database()
+    wordlist = read_wordlist(wordlist_path_prefix + args.wordlist_path)
     
     grid = read_grid(grid_path_prefix + args.grid_path)
     times = []
@@ -720,8 +709,6 @@ def main():
     
     parser.add_argument('-w', '--wordlist', dest='wordlist_path', type=str,
                         default='spreadthewordlist.dict', help='filepath for wordlist')
-    parser.add_argument('-d', '--database', dest='database_path', type=str,
-                        default='spreadthewordlist.db', help='filepath for wordlist database')
     parser.add_argument('-g', '--grid', dest='grid_path', type=str,
                         default='15xcommon.txt', help='filepath for grid')
     parser.add_argument('-t', '--num_trials', dest='num_trials', type=int,
