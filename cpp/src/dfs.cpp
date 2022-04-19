@@ -4,7 +4,7 @@
  * February 2022
  */
 
-#include "dfs.h"
+#include <dfs.h>
 
 /**
  * Standard constructor implementation for DFS.
