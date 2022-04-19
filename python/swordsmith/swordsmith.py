@@ -5,6 +5,7 @@ import math
 import argparse
 import time
 import os
+import multiprocessing
 
 from abc import ABC, abstractmethod
 from random import shuffle
@@ -422,6 +423,81 @@ class Filler(ABC):
         
         return best_match_index, failed_indices
 
+    @staticmethod
+    def minlook_frequency(crossword, wordlist, slot, matches, k):
+        """Considers given matches, returns index of the one that offers the most possible crossing words. If there are none, returns -1"""
+        
+        match_indices = range(min(k, len(matches))) # just take first k matches
+        failed_indices = set()
+
+        frequency = {'A':7.8, 'B':2.0, 'C':4.0, 'D':5.8, 'E':11.0, 'F':1.4, 'G':3.0, 'H':2.3, \
+                     'I':8.2, 'J':0.74, 'K':2.7, 'L':5.6, 'M':6.8, 'N':7.2, 'O':6.1, 'P':2.8, \
+                     'Q':0.24, 'R':7.3, 'S':8.7, 'T':6.7, 'U':3.3, 'V':1.0, 'W':0.91, \
+                     'X':0.27, 'Y':1.6, 'Z':0.44}
+
+        best_match_index = -1
+        best_cross_product = -1
+        best_score = -1
+
+        for match_index in match_indices:
+            cross_product = 0
+
+            for crossing_word in Filler.get_new_crossing_words(crossword, slot, matches[match_index]):
+                num_matches = len(wordlist.get_matches(crossing_word))
+                
+                # if no matches for some crossing slot, give up and move on
+                # this is basically "arc-consistency lookahead"
+                if num_matches == 0:
+                    failed_indices.add(match_index)
+                    cross_product = float('-inf')
+                    break
+                
+                # use log product to avoid explosions
+                cross_product += math.log(num_matches)
+            
+            if cross_product > best_cross_product:
+                best_match_index = match_index
+                best_cross_product = cross_product
+
+            elif cross_product == best_cross_product:
+                curr_match = matches[match_index]
+                score = 1
+                for letter in curr_match:
+                    score *= frequency[letter]
+                if score > best_score:
+                    best_score = score
+                    best_match_index = match_index
+        
+        return best_match_index, failed_indices
+
+    @staticmethod
+    def letter_frequency(crossword, wordlist, slot, matches, k):
+        """Considers given matches, returns index of the one that offers the most possible crossing words. If there are none, returns -1"""
+
+        frequency = {'A':7.8, 'B':2.0, 'C':4.0, 'D':5.8, 'E':11.0, 'F':1.4, 'G':3.0, 'H':2.3, \
+                     'I':8.2, 'J':0.74, 'K':2.7, 'L':5.6, 'M':6.8, 'N':7.2, 'O':6.1, 'P':2.8, \
+                     'Q':0.24, 'R':7.3, 'S':8.7, 'T':6.7, 'U':3.3, 'V':1.0, 'W':0.91, \
+                     'X':0.27, 'Y':1.6, 'Z':0.44}
+
+        match_indices = range(min(k, len(matches))) # just take first k matches
+        failed_indices = set()
+
+        best_match_index = -1
+        best_max_score = -1
+
+        for match_index in match_indices:
+
+            curr_match = matches[match_index]
+            score = 1
+            for letter in curr_match:
+                score *= frequency[letter]
+            
+            if score > best_max_score:
+                best_match_index = match_index
+                best_max_score = score
+        
+        return best_match_index, failed_indices
+
 
 class DFSFiller(Filler):
     """Fills the crossword using a naive DFS algorithm:
@@ -643,6 +719,76 @@ class MinlookBackjumpFiller(Filler):
         crossword.put_word(previous_word, slot)
         return False, slot
 
+class ScrabbleBackjumpFiller(Filler):
+    """Fills the crossword using a dfs algorithm with minlook heuristic:
+    - keeps selecting unfilled slot with fewest possible matches
+    - considers k random matching word, chooses word with the most possible crossing words (product of # in each slot)
+    - backtracks if there is a slot with no matches
+
+    Each iteration returns (is_filled, failed_slot)
+    """
+    
+    def __init__(self, k):
+        self.k = k
+
+    def fill(self, crossword, wordlist, animate, curr_time, max_time):
+
+        if curr_time >= max_time:
+            return False, None
+
+        if animate:
+            utils.clear_terminal()
+            print(crossword)
+        
+        # if the grid is filled, succeed
+        if crossword.is_filled():
+            return True, None
+
+        # choose slot with fewest matches
+        slot, num_matches = Filler.fewest_matches(crossword, wordlist)
+
+        # if some slot has zero matches, fail
+        if num_matches == 0:
+            return False, slot
+        
+        # iterate through all possible matches in the fewest-match slot
+        previous_word = crossword.words[slot]
+        matches = wordlist.get_matches(crossword.words[slot])
+
+        # randomly shuffle matches
+        shuffle(matches)
+
+        while matches:
+            match_index, failed_indices = Filler.minlook_frequency(crossword, wordlist, slot, matches, self.k)
+
+            if match_index != -1:
+                match = matches[match_index]
+            
+            # remove failed matches and chosen match
+            matches = [matches[i] for i in range(len(matches)) if i != match_index and i not in failed_indices]
+            
+            # if no matches were found, try another batch if possible
+            if match_index == -1:
+                continue
+
+            if not Filler.is_valid_match(crossword, wordlist, slot, match):
+                continue
+
+            crossword.put_word(match, slot)
+            
+            time_now = time.time()
+            is_filled, failed_slot = self.fill(crossword, wordlist, animate, time_now, max_time)
+            if is_filled:
+                return True, None
+            if failed_slot not in crossword.crossings[slot]:
+                # undo this word, keep backjumping
+                crossword.put_word(previous_word, slot)
+                return False, failed_slot
+        
+        # if no match works, restore previous word
+        crossword.put_word(previous_word, slot)
+        return False, slot
+
 
 WORDLIST_FOLDER = 'wordlist/'
 GRID_FOLDER = 'grid/'
@@ -680,9 +826,10 @@ def get_filler(args):
         return MinlookFiller(args.k)
     elif args.strategy == 'mlb':
         return MinlookBackjumpFiller(args.k)
+    elif args.strategy == 'scrabble':
+        return ScrabbleBackjumpFiller(args.k)
     else:
         return None
-
 
 def run_test(args):
     dirname = os.path.dirname(__file__)
@@ -701,7 +848,11 @@ def run_test(args):
         crossword = AmericanCrossword.from_grid(grid)
         filler = get_filler(args)
 
-        filler.fill(crossword, wordlist, args.animate)
+        finished = False
+        while not finished:
+            time_now = time.time()
+            max_time = time.time() + 0.25
+            [finished, test] = filler.fill(crossword, wordlist, args.animate, time_now, max_time)
 
         duration = time.time() - tic
 
