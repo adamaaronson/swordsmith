@@ -172,7 +172,20 @@ void AmericanCrossword::GenerateGridFromSlots() {
 
 }
 
-#warning "Include __str__ function from python implementation somehow"
+std::ostream &operator<<(std::ostream &out, const AmericanCrossword &ac)
+{
+    #warning "not implemented accurately yet"
+    std::string out = "";
+    for (Slot * slot : slots_) {
+        out = out + ": " + words_[slot];
+        for (Square * square : slot) {
+            std::string square_char(1, square->GetLetter());
+            out = out + square_char;
+        }
+        out = out + ", \n"
+    }
+    return out;
+}
 
 /**
  * Places block in certain square.
