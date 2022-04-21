@@ -636,6 +636,8 @@ class MinlookBackjumpFiller(Filler):
 
 WORDLIST_FOLDER = 'wordlist/'
 GRID_FOLDER = 'grid/'
+GRID_SUFFIX = '.txt'
+
 
 def read_grid(filepath):
     return open(filepath).read().splitlines()
@@ -681,7 +683,11 @@ def run_test(args):
 
     wordlist = read_wordlist(wordlist_path_prefix + args.wordlist_path)
     
-    grid = read_grid(grid_path_prefix + args.grid_path)
+    grid_path = grid_path_prefix + args.grid_path
+    if not grid_path.endswith(GRID_SUFFIX):
+        grid_path = grid_path + GRID_SUFFIX
+    
+    grid = read_grid(grid_path)
     times = []
 
     for _ in range(args.num_trials):
