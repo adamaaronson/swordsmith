@@ -181,7 +181,7 @@ Implementation of `Filler` that uses a naive DFS algorithm.
 
 ## DFSBackjumpFiller
 
-Implementation of `Filler` that uses a DFS algorithm with backjumping.
+Implementation of `Filler` that uses a DFS algorithm with backjumping, as described in Ginsberg et al's 1990 paper [Search Lessons Learned from Crossword Puzzles](https://www.aaai.org/Papers/AAAI/1990/AAAI90-032.pdf).
 
 ### Methods
 - `fill(self, crossword, wordlist, animate)`
@@ -197,7 +197,7 @@ Implementation of `Filler` that uses a DFS algorithm with backjumping.
 
 ## MinlookFiller
 
-Implementation of `Filler` that uses a minlook heuristic.
+Implementation of `Filler` that uses a minlook heuristic, as described in Ginsberg et al's 1990 paper [Search Lessons Learned from Crossword Puzzles](https://www.aaai.org/Papers/AAAI/1990/AAAI90-032.pdf).
 
 ### Fields
 - `k`
@@ -218,7 +218,7 @@ Implementation of `Filler` that uses a minlook heuristic.
 
 ## MinlookBackjumpFiller
 
-Implementation of `Filler` that uses a minlook heuristic with backjumping.
+Implementation of `Filler` that uses a minlook heuristic with backjumping, as described in Ginsberg et al's 1990 paper [Search Lessons Learned from Crossword Puzzles](https://www.aaai.org/Papers/AAAI/1990/AAAI90-032.pdf).
 
 ### Fields
 - `k`

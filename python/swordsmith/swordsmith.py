@@ -675,7 +675,6 @@ def get_filler(args):
     else:
         return None
 
-
 def run_test(args):
     dirname = os.path.dirname(__file__)
     wordlist_path_prefix = os.path.join(dirname, WORDLIST_FOLDER)
