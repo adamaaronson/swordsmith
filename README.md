@@ -21,6 +21,10 @@ Given an unfilled crossword grid and a wordlist of valid words, what is the fast
 
 ### Subproblems
 
-- How can the algorithm be modified to fill the grid in *n* completely different ways?
+- How can the algorithm be modified to find *n* different word options for a given slot?
 - How can the algorithm find a grid with an overall word-score of *n*, given a scored wordlist?
 - How can the algorithm take advantage of linguistic patterns to optimize for American-style crossword grids?
+
+## Implementation
+
+For implementation details, see the `README` in the [`python` folder](/python).
