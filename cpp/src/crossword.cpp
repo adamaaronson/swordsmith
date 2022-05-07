@@ -4,7 +4,7 @@
  * February 2022
  */
 
-#include "crossword.h"
+#include <crossword.h>
 #include <stdexcept>
 
 /**
