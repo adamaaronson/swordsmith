@@ -11,8 +11,11 @@
 #include <string>
 #include <vector>
 #include <tuple>
+#include <ostream>
 
-using namespace swordsmith;
+#include "square.h"
+#include "word.h"
+#include "slot.h"
 
 /**
  * This class implements a general crossword framework.
@@ -23,15 +26,20 @@ class Crossword {
     public:
 
         /**
-         * Standard constructor for general crossword class.
+         * Standard constructor for general Crossword class.
          */
         Crossword();
 
         /**
-         * Custom constructor for general crossword class.
+         * Custom constructor for general Crossword class.
          */
-        Crossword(std::set<Slot> slots, std::map<Square, std::map<Slot, int>> squares,
+        Crossword(std::set<Slot> slots, std::map<Square*, std::map<Slot, int>> squares,
                   std::map<Slot, Word> words, std::set<Word> wordset, Wordlist wordlist);
+
+        /**
+         * Standard destructor for general Crossword class.
+         */
+        ~Crossword();
 
         /**
          * Places given letter at ith square of given slot.
@@ -44,14 +52,7 @@ class Crossword {
          * Defaults to adding the word to the wordlist if not already included.
          * Updates words in crossing slots using PutLetter().
          */
-        void PutWord(Word word, Slot slot, bool add_to_wordlist=true);
-
-        /**
-         * Returns the unfilled slot in the grid with the fewest matches.
-         * Also returns the corresponding number of matches.
-         * Used as a next-slot heuristic.
-         */
-        std::tuple<Slot, int> FewestMatches();
+        void PutWord(Word word, Slot slot, bool wordlist_to_update=NULL);
 
         /**
          * Returns whether word is completely filled.
@@ -64,7 +65,7 @@ class Crossword {
         bool IsDupe(Word word);
 
         /**
-         * Returns whether every square in the frid is non-empty.
+         * Returns whether every square in the grid is non-empty.
          */
         bool IsFilled();
 
@@ -95,7 +96,7 @@ class Crossword {
          * Map of maps that keeps track of which slots contain which squares.
          * Maps from square to map, which maps from slot to index of square within slot.
          */
-        std::map<Square, std::map<Slot, int>> squares_;
+        std::map<Square*, std::map<Slot, int>> squares_;
 
         /**
          * Maps each slot to its corresponding word.
@@ -110,9 +111,7 @@ class Crossword {
          */
         std::set<Word> wordset_;
 
-        /**
-         * Contains all of the crossword's filled words.
-         */
-        Wordlist wordlist_;
-
 };
+
+#warning "Not sure if this is where the operator override should be"
+std::ostream &operator<<(std::ostream &out, const Crossword &crossword);
