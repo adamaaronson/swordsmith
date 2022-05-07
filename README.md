@@ -2,6 +2,8 @@
 
 Forging crosswords, word by word.
 
+![Demo](demo.gif)
+
 ## Developers
 
 - Adam Aaronson
