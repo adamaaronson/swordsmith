@@ -16,7 +16,7 @@ class Crossword:
     def __init__(self):
         self.slots = set()                                          # set of slots in the puzzle
         self.squares = defaultdict(lambda: defaultdict(int))        # square => slots that contain it => index of square in slot
-        self.crossings = defaultdict(lambda: defaultdict(tuple))    # slot => slots that cross it => square where they cross
+        self.crossings = defaultdict(lambda: defaultdict(tuple))    # slot => slots that cross it => tuple of squares where they cross
         self.words = {}                                             # slot => word in that slot
         self.wordset = set()                                        # set of filled words in puzzle
     
@@ -36,7 +36,10 @@ class Crossword:
             for slot in self.squares[square]:
                 for crossing_slot in self.squares[square]:
                     if slot != crossing_slot:
-                        self.crossings[slot][crossing_slot] = square
+                        if crossings_tuple := self.crossings[slot][crossing_slot]:
+                            self.crossings[slot][crossing_slot] = (*crossings_tuple, square)
+                        else:
+                            self.crossings[slot][crossing_slot] = (square,)
 
     def __put_letter_in_slot(self, letter, slot, i):
         """Sets letter at the given index of the given slot"""
@@ -75,12 +78,11 @@ class Crossword:
         
         # update crossing words
         for crossing_slot in self.crossings[slot]:
-            square = self.crossings[slot][crossing_slot]
+            for square in self.crossings[slot][crossing_slot]:
+                index = self.squares[square][slot]
+                crossing_index = self.squares[square][crossing_slot]
 
-            index = self.squares[square][slot]
-            crossing_index = self.squares[square][crossing_slot]
-
-            self.__put_letter_in_slot(word[index], crossing_slot, crossing_index)
+                self.__put_letter_in_slot(word[index], crossing_slot, crossing_index)
 
     def is_dupe(self, word):
         """Returns whether or not a given word is already in the grid"""
@@ -107,7 +109,7 @@ class AmericanCrossword(Crossword):
         self.__generate_slots_from_grid()
 
     @classmethod
-    def from_grid(cls, grid):
+    def from_grid(cls, grid, all_checked=True):
         """Generates AmericanCrossword from 2D array of characters"""
         rows = len(grid)
         cols = len(grid[0])
@@ -128,7 +130,7 @@ class AmericanCrossword(Crossword):
                 if grid[r][c] != BLOCK and grid[r][c] != EMPTY:
                     xw.grid[r][c] = grid[r][c]
         
-        xw.__generate_slots_from_grid()
+        xw.__generate_slots_from_grid(all_checked)
 
         return xw
     
@@ -188,7 +190,7 @@ class AmericanCrossword(Crossword):
             self.grid[row][col] = BLOCK
         self.__generate_slots_from_grid()
     
-    def __add_slot(self, squares, word):
+    def add_slot(self, squares, word):
         slot = tuple(squares)
         self.slots.add(slot)
 
@@ -200,7 +202,7 @@ class AmericanCrossword(Crossword):
         
         self.words[slot] = word
 
-    def __generate_slots_from_grid(self):
+    def __generate_slots_from_grid(self, all_checked=True):
         self.clear()
 
         # generate across words
@@ -216,12 +218,14 @@ class AmericanCrossword(Crossword):
                 else:
                     # block hit, check to see if there's a word in progress
                     if word != '':
-                        self.__add_slot(squares, word)
+                        if all_checked or len(squares) > 1:
+                            self.add_slot(squares, word)
                         word = ''
                         squares = []
             # last word in row
             if word != '':
-                self.__add_slot(squares, word)
+                if all_checked or len(squares) > 1:
+                    self.add_slot(squares, word)
 
         # generate down words
         for c in range(self.cols):
@@ -236,12 +240,14 @@ class AmericanCrossword(Crossword):
                 else:
                     # block hit, check to see if there's a word in progress
                     if word != '':
-                        self.__add_slot(squares, word)
+                        if all_checked or len(squares) > 1:
+                            self.add_slot(squares, word)
                         word = ''
                         squares = []
             # last word in column
             if word != '':
-                self.__add_slot(squares, word)
+                if all_checked or len(squares) > 1:
+                    self.add_slot(squares, word)
         
         self.generate_crossings()
 
@@ -320,14 +326,15 @@ class Filler(ABC):
         new_crossing_words = []
 
         for crossing_slot in crossword.crossings[slot]:
-            square = crossword.crossings[slot][crossing_slot]
-            index = crossword.squares[square][slot]
-            letter = word[index]
+            new_crossing_word = crossword.words[crossing_slot]
+            for square in crossword.crossings[slot][crossing_slot]:
+                index = crossword.squares[square][slot]
+                letter = word[index]
 
-            crossing_index = crossword.squares[square][crossing_slot]
-            crossing_word = crossword.words[crossing_slot]
+                crossing_index = crossword.squares[square][crossing_slot]
+                crossing_word = crossword.words[crossing_slot]
 
-            new_crossing_word = crossing_word[:crossing_index] + letter + crossing_word[crossing_index + 1:]
+                new_crossing_word = new_crossing_word[:crossing_index] + letter + new_crossing_word[crossing_index + 1:]
 
             if Crossword.is_word_filled(crossing_word) and crossing_word == new_crossing_word:
                 # this word was already there, ignore
