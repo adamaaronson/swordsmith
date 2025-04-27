@@ -92,6 +92,16 @@ class Crossword:
         """Returns whether or not the whole crossword is filled"""
         return all(Crossword.is_word_filled(word) for word in self.words.values())
     
+    def is_validly_filled(self, wordlist):
+        """Returns whether the crossword is filled with words in the wordlist with no dupes"""
+        if not self.is_filled():
+            return False # some unfilled words
+        if not all(word in wordlist.words for word in self.words.values()):
+            return False # some invalid words
+        if not len(self.wordset) == len(self.words.values()):
+            return False # some dupes
+        return True
+    
     @staticmethod
     def is_word_filled(word):
         """Returns whether word is completely filled"""
@@ -647,8 +657,8 @@ GRID_SUFFIX = '.txt'
 
 
 def read_grid(filepath):
-    return open(filepath).read().splitlines()
-
+    with open(filepath, 'r') as f:
+        return f.read().splitlines()
 
 def read_wordlist(filepath, scored=True, min_score=50):
     with open(filepath, 'r') as f:

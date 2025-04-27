@@ -17,7 +17,7 @@ class Test5xDFS(unittest.TestCase):
         filler = sw.DFSFiller()
 
         filler.fill(crossword, wordlist, animate=False)
-        self.assertTrue(crossword.is_filled())
+        self.assertTrue(crossword.is_validly_filled(wordlist))
 
 class Test5xDFSBackjump(unittest.TestCase):
     def runTest(self):
@@ -27,7 +27,7 @@ class Test5xDFSBackjump(unittest.TestCase):
         filler = sw.DFSBackjumpFiller()
 
         filler.fill(crossword, wordlist, animate=False)
-        self.assertTrue(crossword.is_filled())
+        self.assertTrue(crossword.is_validly_filled(wordlist))
 
 class Test5xMinlook(unittest.TestCase):
     def runTest(self):
@@ -37,7 +37,7 @@ class Test5xMinlook(unittest.TestCase):
         filler = sw.MinlookFiller(5)
 
         filler.fill(crossword, wordlist, animate=False)
-        self.assertTrue(crossword.is_filled())
+        self.assertTrue(crossword.is_validly_filled(wordlist))
 
 class Test5xMinlookBackjump(unittest.TestCase):
     def runTest(self):
@@ -47,7 +47,7 @@ class Test5xMinlookBackjump(unittest.TestCase):
         filler = sw.MinlookBackjumpFiller(5)
 
         filler.fill(crossword, wordlist, animate=False)
-        self.assertTrue(crossword.is_filled())
+        self.assertTrue(crossword.is_validly_filled(wordlist))
 
 class Test15xDFS(unittest.TestCase):
     def runTest(self):
@@ -57,7 +57,7 @@ class Test15xDFS(unittest.TestCase):
         filler = sw.DFSFiller()
 
         filler.fill(crossword, wordlist, animate=False)
-        self.assertTrue(crossword.is_filled())
+        self.assertTrue(crossword.is_validly_filled(wordlist))
 
 class Test15xDFSBackjump(unittest.TestCase):
     def runTest(self):
@@ -67,7 +67,7 @@ class Test15xDFSBackjump(unittest.TestCase):
         filler = sw.DFSBackjumpFiller()
 
         filler.fill(crossword, wordlist, animate=False)
-        self.assertTrue(crossword.is_filled())
+        self.assertTrue(crossword.is_validly_filled(wordlist))
 
 class Test15xMinlook(unittest.TestCase):
     def runTest(self):
@@ -77,7 +77,7 @@ class Test15xMinlook(unittest.TestCase):
         filler = sw.MinlookFiller(5)
 
         filler.fill(crossword, wordlist, animate=False)
-        self.assertTrue(crossword.is_filled())
+        self.assertTrue(crossword.is_validly_filled(wordlist))
 
 class Test15xMinlookBackjump(unittest.TestCase):
     def runTest(self):
@@ -87,6 +87,6 @@ class Test15xMinlookBackjump(unittest.TestCase):
         filler = sw.MinlookBackjumpFiller(5)
 
         filler.fill(crossword, wordlist, animate=False)
-        self.assertTrue(crossword.is_filled())
+        self.assertTrue(crossword.is_validly_filled(wordlist))
 
 unittest.main()
