@@ -1,6 +1,6 @@
 /**
  * @file dfs.cpp
- * Jack Joshi, Adam Aaronson, JT Kirages, Mark Bauer
+ * Jack Joshi, Adam Aaronson
  * February 2022
  */
 
@@ -26,7 +26,7 @@ DFS::DFS(Crossword crossword, bool animate) {
 bool DFS::Fill() {
 
     if (animate_) {
-        #warning "clear terminal"
+        ClearTerminal();
         #warning "print crossword"
     }
 
