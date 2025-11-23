@@ -736,12 +736,14 @@ def get_filler(args):
         return None
 
 
-def run_test(args):
+def run(args):
     dirname = os.path.dirname(__file__)
     wordlist_path_prefix = os.path.join(dirname, WORDLIST_FOLDER)
     grid_path_prefix = os.path.join(dirname, GRID_FOLDER)
 
-    wordlist = read_wordlist(wordlist_path_prefix + args.wordlist_path)
+    wordlist = read_wordlist(
+        wordlist_path_prefix + args.wordlist_path, min_score=args.min_score
+    )
 
     grid_path = grid_path_prefix + args.grid_path
     if not grid_path.endswith(GRID_SUFFIX):
@@ -784,6 +786,14 @@ def main():
         help='filepath for wordlist',
     )
     parser.add_argument(
+        '-m',
+        '--min_score',
+        dest='min_score',
+        type=int,
+        default=50,
+        help='minimum word score',
+    )
+    parser.add_argument(
         '-g',
         '--grid',
         dest='grid_path',
@@ -819,7 +829,7 @@ def main():
     )
     args = parser.parse_args()
 
-    run_test(args)
+    run(args)
 
 
 if __name__ == '__main__':
