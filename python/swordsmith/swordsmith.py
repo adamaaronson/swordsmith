@@ -4,6 +4,7 @@ import math
 import argparse
 import time
 import os
+import re
 
 from abc import ABC, abstractmethod
 from random import shuffle
@@ -15,15 +16,23 @@ BLOCK = ' '
 
 class Crossword:
     def __init__(self):
-        self.slots = set()  # set of slots in the puzzle
-        self.squares = defaultdict(
-            lambda: defaultdict(int)
-        )  # square => slots that contain it => index of square in slot
-        self.crossings = defaultdict(
-            lambda: defaultdict(tuple)
-        )  # slot => slots that cross it => tuple of squares where they cross
-        self.words = {}  # slot => word in that slot
-        self.wordset = set()  # set of filled words in puzzle
+        self.slots = set()
+        """set of slots in the puzzle"""
+
+        self.squares = defaultdict(lambda: defaultdict(int))
+        """square => slots that contain it => index of square in slot"""
+
+        self.crossings = defaultdict(lambda: defaultdict(tuple))
+        """slot => slots that cross it => tuple of squares where they cross"""
+
+        self.words = {}
+        """slot => word in that slot"""
+
+        self.wordset = set()
+        """set of filled words in puzzle"""
+
+        self.constraints = defaultdict(str)
+        """slot => regex constraining words for that slot"""
 
     def __str__(self):
         return '\n'.join(
@@ -95,6 +104,10 @@ class Crossword:
 
                 self.__put_letter_in_slot(word[index], crossing_slot, crossing_index)
 
+    def add_constraint(self, slot, regex):
+        """Add regex constraint to a given slot"""
+        self.constraints[slot] = regex
+
     def is_dupe(self, word):
         """Returns whether or not a given word is already in the grid"""
         return word in self.wordset
@@ -111,6 +124,11 @@ class Crossword:
             return False  # some invalid words
         if not len(self.wordset) == len(self.words.values()):
             return False  # some dupes
+        if not all(
+            re.search(constraint, self.words[slot])
+            for slot, constraint in self.constraints.items()
+        ):
+            return False  # some constraint violations
         return True
 
     @staticmethod
@@ -323,9 +341,9 @@ class Wordlist:
         if word in self.added_words:
             self.added_words.remove(word)
 
-    def get_matches(self, pattern):
-        if pattern in self.pattern_matches:
-            return self.pattern_matches[pattern]
+    def get_matches(self, pattern, regex):
+        if (pattern, regex) in self.pattern_matches:
+            return self.pattern_matches[(pattern, regex)]
 
         length = len(pattern)
         indices = [
@@ -338,19 +356,31 @@ class Wordlist:
         else:
             matches = self.lengths[length]
 
+        if regex:
+            matches = [match for match in matches if re.search(regex, match)]
+
+        self.pattern_matches[(pattern, regex)] = matches
+
         return matches
+
+
+class RetryException(Exception):
+    """Exceeded retry time"""
 
 
 class Filler(ABC):
     """Abstract base class containing useful methods for filling crosswords"""
 
     @abstractmethod
-    def fill(self, crossword, wordlist, animate):
+    def fill(self, crossword, wordlist, animate, retry_time=None):
         """Fills the given crossword using some strategy"""
 
     @staticmethod
     def get_new_crossing_words(crossword, slot, word):
-        """Returns list of new words that cross the given slot, given a word to theoretically put in the slot. Excludes slots that were already filled"""
+        """
+        Returns list of (crossing slot, new word) that cross the given slot,
+        given a word to theoretically put in the slot. Excludes slots that were already filled.
+        """
         new_crossing_words = []
 
         for crossing_slot in crossword.crossings[slot]:
@@ -375,7 +405,7 @@ class Filler(ABC):
                 # this word was already there, ignore
                 continue
 
-            new_crossing_words.append(new_crossing_word)
+            new_crossing_words.append((crossing_slot, new_crossing_word))
 
         return new_crossing_words
 
@@ -391,7 +421,7 @@ class Filler(ABC):
         new_crossing_words = Filler.get_new_crossing_words(crossword, slot, match)
 
         # make sure crossing words are valid
-        for crossing_word in new_crossing_words:
+        for crossing_slot, crossing_word in new_crossing_words:
             if (
                 Crossword.is_word_filled(crossing_word)
                 and crossing_word not in wordlist.words
@@ -399,6 +429,9 @@ class Filler(ABC):
                 return False  # created invalid word
             if crossword.is_dupe(crossing_word):
                 return False  # created dupe
+            if constraint := crossword.constraints[crossing_slot]:
+                if not re.search(constraint, crossing_word):
+                    return False  # violated constraint
 
         # make sure crossing words don't dupe each other
         if len(set(new_crossing_words)) != len(new_crossing_words):
@@ -416,7 +449,7 @@ class Filler(ABC):
             word = crossword.words[slot]
             if Crossword.is_word_filled(word):
                 continue
-            matches = len(wordlist.get_matches(word))
+            matches = len(wordlist.get_matches(word, crossword.constraints[slot]))
             if matches < fewest_matches:
                 fewest_matches = matches
                 fewest_matches_slot = slot
@@ -434,10 +467,14 @@ class Filler(ABC):
         for match_index in match_indices:
             cross_product = 0
 
-            for crossing_word in Filler.get_new_crossing_words(
+            for crossing_slot, crossing_word in Filler.get_new_crossing_words(
                 crossword, slot, matches[match_index]
             ):
-                num_matches = len(wordlist.get_matches(crossing_word))
+                num_matches = len(
+                    wordlist.get_matches(
+                        crossing_word, crossword.constraints[crossing_slot]
+                    )
+                )
 
                 # if no matches for some crossing slot, give up and move on
                 # this is basically "arc-consistency lookahead"
@@ -457,13 +494,18 @@ class Filler(ABC):
 
 
 class DFSFiller(Filler):
-    """Fills the crossword using a naive DFS algorithm:
+    """
+    Fills the crossword using a naive DFS algorithm:
 
     - keeps selecting unfilled slot with fewest possible matches
     - randomly chooses matching word for that slot
-    - backtracks if there is a slot with no matches"""
+    - backtracks if there is a slot with no matches
+    """
 
-    def fill(self, crossword, wordlist, animate):
+    def fill(self, crossword, wordlist, animate, retry_time=None):
+        if retry_time and time.time() > retry_time:
+            raise RetryException()
+
         if animate:
             utils.clear_terminal()
             print(crossword)
@@ -481,7 +523,9 @@ class DFSFiller(Filler):
 
         # iterate through all possible matches in the fewest-match slot
         previous_word = crossword.words[slot]
-        matches = wordlist.get_matches(crossword.words[slot])
+        matches = wordlist.get_matches(
+            crossword.words[slot], crossword.constraints[slot]
+        )
 
         # randomly shuffle matches
         matches = list(matches)
@@ -493,7 +537,7 @@ class DFSFiller(Filler):
 
             crossword.put_word(match, slot)
 
-            if self.fill(crossword, wordlist, animate):
+            if self.fill(crossword, wordlist, animate, retry_time):
                 return True
 
         # if no match works, restore previous word
@@ -503,15 +547,20 @@ class DFSFiller(Filler):
 
 
 class DFSBackjumpFiller(Filler):
-    """Fills the crossword using a naive DFS algorithm:
+    """
+    Fills the crossword using a naive DFS algorithm:
 
     - keeps selecting unfilled slot with fewest possible matches
     - randomly chooses matching word for that slot
     - backtracks if there is a slot with no matches
 
-    Each iteration returns (is_filled, failed_slot)"""
+    Each iteration returns (is_filled, failed_slot)
+    """
 
-    def fill(self, crossword, wordlist, animate):
+    def fill(self, crossword, wordlist, animate, retry_time=None):
+        if retry_time and time.time() > retry_time:
+            raise RetryException()
+
         if animate:
             utils.clear_terminal()
             print(crossword)
@@ -529,7 +578,9 @@ class DFSBackjumpFiller(Filler):
 
         # iterate through all possible matches in the fewest-match slot
         previous_word = crossword.words[slot]
-        matches = wordlist.get_matches(crossword.words[slot])
+        matches = wordlist.get_matches(
+            crossword.words[slot], crossword.constraints[slot]
+        )
 
         # randomly shuffle matches
         matches = list(matches)
@@ -541,7 +592,7 @@ class DFSBackjumpFiller(Filler):
 
             crossword.put_word(match, slot)
 
-            is_filled, failed_slot = self.fill(crossword, wordlist, animate)
+            is_filled, failed_slot = self.fill(crossword, wordlist, animate, retry_time)
             if is_filled:
                 return True, None
             if failed_slot not in crossword.crossings[slot]:
@@ -555,7 +606,8 @@ class DFSBackjumpFiller(Filler):
 
 
 class MinlookFiller(Filler):
-    """Fills the crossword using a dfs algorithm with minlook heuristic:
+    """
+    Fills the crossword using a dfs algorithm with minlook heuristic:
     - keeps selecting unfilled slot with fewest possible matches
     - considers k random matching word, chooses word with the most possible crossing words (product of # in each slot)
     - backtracks if there is a slot with no matches
@@ -564,7 +616,10 @@ class MinlookFiller(Filler):
     def __init__(self, k):
         self.k = k
 
-    def fill(self, crossword, wordlist, animate):
+    def fill(self, crossword, wordlist, animate, retry_time=None):
+        if retry_time and time.time() > retry_time:
+            raise RetryException()
+
         if animate:
             utils.clear_terminal()
             print(crossword)
@@ -582,7 +637,9 @@ class MinlookFiller(Filler):
 
         # iterate through all possible matches in the fewest-match slot
         previous_word = crossword.words[slot]
-        matches = wordlist.get_matches(crossword.words[slot])
+        matches = wordlist.get_matches(
+            crossword.words[slot], crossword.constraints[slot]
+        )
 
         # randomly shuffle matches
         matches = list(matches)
@@ -612,7 +669,7 @@ class MinlookFiller(Filler):
 
             crossword.put_word(match, slot)
 
-            if self.fill(crossword, wordlist, animate):
+            if self.fill(crossword, wordlist, animate, retry_time):
                 return True
 
         # if no match works, restore previous word
@@ -621,7 +678,8 @@ class MinlookFiller(Filler):
 
 
 class MinlookBackjumpFiller(Filler):
-    """Fills the crossword using a dfs algorithm with minlook heuristic:
+    """
+    Fills the crossword using a dfs algorithm with minlook heuristic:
     - keeps selecting unfilled slot with fewest possible matches
     - considers k random matching word, chooses word with the most possible crossing words (product of # in each slot)
     - backtracks if there is a slot with no matches
@@ -632,7 +690,10 @@ class MinlookBackjumpFiller(Filler):
     def __init__(self, k):
         self.k = k
 
-    def fill(self, crossword, wordlist, animate):
+    def fill(self, crossword, wordlist, animate, retry_time=None):
+        if retry_time and time.time() > retry_time:
+            raise RetryException()
+
         if animate:
             utils.clear_terminal()
             print(crossword)
@@ -650,7 +711,9 @@ class MinlookBackjumpFiller(Filler):
 
         # iterate through all possible matches in the fewest-match slot
         previous_word = crossword.words[slot]
-        matches = wordlist.get_matches(crossword.words[slot])
+        matches = wordlist.get_matches(
+            crossword.words[slot], crossword.constraints[slot]
+        )
 
         # randomly shuffle matches
         matches = list(matches)
@@ -680,7 +743,7 @@ class MinlookBackjumpFiller(Filler):
 
             crossword.put_word(match, slot)
 
-            is_filled, failed_slot = self.fill(crossword, wordlist, animate)
+            is_filled, failed_slot = self.fill(crossword, wordlist, animate, retry_time)
             if is_filled:
                 return True, None
             if failed_slot not in crossword.crossings[slot]:
@@ -691,6 +754,33 @@ class MinlookBackjumpFiller(Filler):
         # if no match works, restore previous word
         crossword.put_word(previous_word, slot)
         return False, slot
+
+
+class Miner:
+    """
+    Wrapper for a filler that repeatedly tries the filler,
+    retrying after a given number of seconds.
+    """
+
+    def __init__(self, filler: Filler, retry_seconds: int):
+        self.filler = filler
+        self.retry_seconds = retry_seconds
+
+    def fill(self, crossword_maker, wordlist, animate):
+        retries = 0
+
+        while True:
+            retry_time = time.time() + self.retry_seconds
+            crossword = crossword_maker()
+
+            try:
+                self.filler.fill(crossword, wordlist, animate, retry_time)
+                break
+            except RetryException:
+                retries += 1
+                print(f'Attempt #{retries} timed out. Retrying.')
+
+        print(crossword)
 
 
 WORDLIST_FOLDER = 'wordlist/'
@@ -827,6 +917,14 @@ def main():
     )
     parser.add_argument(
         '-k', '--k', dest='k', type=int, default=5, help='k constant for minlook'
+    )
+    parser.add_argument(
+        '-r',
+        '--retry-seconds',
+        dest='retry_seconds',
+        type=float,
+        default=None,
+        help='number of seconds after which to reshuffle wordlist and retry',
     )
     args = parser.parse_args()
 
