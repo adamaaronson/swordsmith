@@ -421,7 +421,7 @@ class Filler(ABC):
         new_crossing_words = Filler.get_new_crossing_words(crossword, slot, match)
 
         # make sure crossing words are valid
-        for crossing_slot, crossing_word in new_crossing_words:
+        for _, crossing_word in new_crossing_words:
             if (
                 Crossword.is_word_filled(crossing_word)
                 and crossing_word not in wordlist.words
