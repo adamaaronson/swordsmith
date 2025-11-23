@@ -788,7 +788,7 @@ def main():
     )
     parser.add_argument(
         '-m',
-        '--min_score',
+        '--min-score',
         dest='min_score',
         type=int,
         default=50,
@@ -804,7 +804,7 @@ def main():
     )
     parser.add_argument(
         '-t',
-        '--num_trials',
+        '--num-trials',
         dest='num_trials',
         type=int,
         default=5,
