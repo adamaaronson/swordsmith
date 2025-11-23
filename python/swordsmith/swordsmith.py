@@ -429,9 +429,6 @@ class Filler(ABC):
                 return False  # created invalid word
             if crossword.is_dupe(crossing_word):
                 return False  # created dupe
-            if constraint := crossword.constraints[crossing_slot]:
-                if not re.search(constraint, crossing_word):
-                    return False  # violated constraint
 
         # make sure crossing words don't dupe each other
         if len(set(new_crossing_words)) != len(new_crossing_words):
