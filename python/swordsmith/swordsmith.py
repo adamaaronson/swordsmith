@@ -742,7 +742,8 @@ def run(args):
     grid_path_prefix = os.path.join(dirname, GRID_FOLDER)
 
     wordlist = read_wordlist(
-        wordlist_path_prefix + args.wordlist_path, min_score=args.min_score
+        args.wordlist_path or wordlist_path_prefix + 'spreadthewordlist.dict',
+        min_score=args.min_score,
     )
 
     grid_path = grid_path_prefix + args.grid_path
@@ -782,7 +783,7 @@ def main():
         '--wordlist',
         dest='wordlist_path',
         type=str,
-        default='spreadthewordlist.dict',
+        default=None,
         help='filepath for wordlist',
     )
     parser.add_argument(
