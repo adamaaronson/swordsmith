@@ -1,0 +1,2 @@
+EMPTY = '.'
+BLOCK = ' '
