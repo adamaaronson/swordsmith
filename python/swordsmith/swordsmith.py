@@ -106,7 +106,15 @@ class Crossword:
 
     def add_constraint(self, slot, regex):
         """Add regex constraint to a given slot"""
+        if slot not in self.slots:
+            raise ValueError(f'{slot} is not a valid slot')
         self.constraints[slot] = regex
+
+    def fits_constraint(self, slot, word):
+        """Returns whether the word fits that slot's constraint"""
+        if slot not in self.constraints:
+            return True
+        return re.search(self.constraints[slot], word) is not None
 
     def is_dupe(self, word):
         """Returns whether or not a given word is already in the grid"""
@@ -124,10 +132,7 @@ class Crossword:
             return False  # some invalid words
         if not len(self.wordset) == len(self.words.values()):
             return False  # some dupes
-        if not all(
-            re.search(constraint, self.words[slot])
-            for slot, constraint in self.constraints.items()
-        ):
+        if not all(self.fits_constraint(slot, self.words[slot]) for slot in self.slots):
             return False  # some constraint violations
         return True
 
@@ -150,7 +155,7 @@ class AmericanCrossword(Crossword):
         self.__generate_slots_from_grid()
 
     @classmethod
-    def from_grid(cls, grid, all_checked=True):
+    def from_grid(cls, grid, min_length=1):
         """Generates AmericanCrossword from 2D array of characters"""
         rows = len(grid)
         cols = len(grid[0])
@@ -171,7 +176,7 @@ class AmericanCrossword(Crossword):
                 if grid[r][c] != BLOCK and grid[r][c] != EMPTY:
                     xw.grid[r][c] = grid[r][c]
 
-        xw.__generate_slots_from_grid(all_checked)
+        xw.__generate_slots_from_grid(min_length)
 
         return xw
 
@@ -243,7 +248,7 @@ class AmericanCrossword(Crossword):
 
         self.words[slot] = word
 
-    def __generate_slots_from_grid(self, all_checked=True):
+    def __generate_slots_from_grid(self, min_length=1):
         self.clear()
 
         # generate across words
@@ -259,13 +264,13 @@ class AmericanCrossword(Crossword):
                 else:
                     # block hit, check to see if there's a word in progress
                     if word != '':
-                        if all_checked or len(squares) > 1:
+                        if len(squares) >= min_length:
                             self.add_slot(squares, word)
                         word = ''
                         squares = []
             # last word in row
             if word != '':
-                if all_checked or len(squares) > 1:
+                if len(squares) >= min_length:
                     self.add_slot(squares, word)
 
         # generate down words
@@ -281,13 +286,13 @@ class AmericanCrossword(Crossword):
                 else:
                     # block hit, check to see if there's a word in progress
                     if word != '':
-                        if all_checked or len(squares) > 1:
+                        if len(squares) >= min_length:
                             self.add_slot(squares, word)
                         word = ''
                         squares = []
             # last word in column
             if word != '':
-                if all_checked or len(squares) > 1:
+                if len(squares) >= min_length:
                     self.add_slot(squares, word)
 
         self.generate_crossings()
@@ -421,12 +426,13 @@ class Filler(ABC):
         new_crossing_words = Filler.get_new_crossing_words(crossword, slot, match)
 
         # make sure crossing words are valid
-        for _, crossing_word in new_crossing_words:
-            if (
-                Crossword.is_word_filled(crossing_word)
-                and crossing_word not in wordlist.words
-            ):
+        for crossing_slot, crossing_word in new_crossing_words:
+            if not Crossword.is_word_filled(crossing_word):
+                continue
+            if crossing_word not in wordlist.words:
                 return False  # created invalid word
+            if not crossword.fits_constraint(crossing_slot, crossing_word):
+                return False  # violated constraint
             if crossword.is_dupe(crossing_word):
                 return False  # created dupe
 
@@ -509,7 +515,7 @@ class DFSFiller(Filler):
 
         # if the grid is filled, succeed if every word is valid and otherwise fail
         if crossword.is_filled():
-            return True
+            return crossword.is_validly_filled(wordlist)
 
         # choose slot with fewest matches
         slot, num_matches = Filler.fewest_matches(crossword, wordlist)
@@ -564,7 +570,7 @@ class DFSBackjumpFiller(Filler):
 
         # if the grid is filled, succeed if every word is valid and otherwise fail
         if crossword.is_filled():
-            return True, None
+            return crossword.is_validly_filled(wordlist), None
 
         # choose slot with fewest matches
         slot, num_matches = Filler.fewest_matches(crossword, wordlist)
@@ -592,7 +598,7 @@ class DFSBackjumpFiller(Filler):
             is_filled, failed_slot = self.fill(crossword, wordlist, animate, retry_time)
             if is_filled:
                 return True, None
-            if failed_slot not in crossword.crossings[slot]:
+            if failed_slot and failed_slot not in crossword.crossings[slot]:
                 # undo this word, keep backjumping
                 crossword.put_word(previous_word, slot)
                 return False, failed_slot
@@ -610,7 +616,7 @@ class MinlookFiller(Filler):
     - backtracks if there is a slot with no matches
     """
 
-    def __init__(self, k):
+    def __init__(self, k=5):
         self.k = k
 
     def fill(self, crossword, wordlist, animate, retry_time=None):
@@ -623,7 +629,7 @@ class MinlookFiller(Filler):
 
         # if the grid is filled, succeed
         if crossword.is_filled():
-            return True
+            return crossword.is_validly_filled(wordlist)
 
         # choose slot with fewest matches
         slot, num_matches = Filler.fewest_matches(crossword, wordlist)
@@ -684,7 +690,7 @@ class MinlookBackjumpFiller(Filler):
     Each iteration returns (is_filled, failed_slot)
     """
 
-    def __init__(self, k):
+    def __init__(self, k=5):
         self.k = k
 
     def fill(self, crossword, wordlist, animate, retry_time=None):
@@ -697,7 +703,7 @@ class MinlookBackjumpFiller(Filler):
 
         # if the grid is filled, succeed
         if crossword.is_filled():
-            return True, None
+            return crossword.is_validly_filled(wordlist), None
 
         # choose slot with fewest matches
         slot, num_matches = Filler.fewest_matches(crossword, wordlist)
@@ -743,7 +749,7 @@ class MinlookBackjumpFiller(Filler):
             is_filled, failed_slot = self.fill(crossword, wordlist, animate, retry_time)
             if is_filled:
                 return True, None
-            if failed_slot not in crossword.crossings[slot]:
+            if failed_slot and failed_slot not in crossword.crossings[slot]:
                 # undo this word, keep backjumping
                 crossword.put_word(previous_word, slot)
                 return False, failed_slot
@@ -763,7 +769,7 @@ class Miner:
         self.filler = filler
         self.retry_seconds = retry_seconds
 
-    def fill(self, crossword_maker, wordlist, animate):
+    def fill(self, crossword_maker, wordlist, animate, continuous=False):
         retries = 0
 
         while True:
@@ -772,7 +778,10 @@ class Miner:
 
             try:
                 self.filler.fill(crossword, wordlist, animate, retry_time)
-                break
+                if continuous:
+                    print(crossword)
+                else:
+                    break
             except RetryException:
                 retries += 1
                 print(f'Attempt #{retries} timed out. Retrying.')
