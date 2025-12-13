@@ -4,13 +4,6 @@ Forging crosswords, word by word.
 
 ![Demo](demo.gif)
 
-## Developers
-
-- Adam Aaronson
-- Jack Joshi
-- JT Kirages
-- Mark Bauer
-
 ## Background
 
 A crossword is a puzzle where the solver must fill a grid of crossing slots with words. Each slot consists of a sequence of squares, where each square is to be filled with a letter. If one square is part of multiple slots, the slots are said to be crossing at that square. A slot's word is the concatenation of the letters in each of the slot's squares. The grid is validly filled if every square has a letter and every slot's word is valid.
