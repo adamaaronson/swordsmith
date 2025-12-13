@@ -1,5 +1,7 @@
 __pycache__/
+.pytest_cache/
 *.db
 *.db-journal
+swordsmith.egg-info/
 
 local_tests

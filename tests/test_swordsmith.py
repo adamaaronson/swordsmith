@@ -1,8 +1,4 @@
-import sys
 import unittest
-
-sys.path.append('../swordsmith')
-
 import swordsmith as sw
 
 GRID_5x = '../swordsmith/grid/5x.txt'

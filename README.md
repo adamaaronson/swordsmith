@@ -20,6 +20,8 @@ An American-style crossword consists of a two-dimensional grid of black and whit
 
 ## How to Use
 
+From this folder, run `pip install -e .` to install `swordsmith`.
+
 Run `python3 swordsmith.py` using any of these optional command line flags:
 
 ```
