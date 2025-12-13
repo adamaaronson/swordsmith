@@ -4,20 +4,6 @@ Forging crosswords, word by word.
 
 ![Demo](demo.gif)
 
-## Background
-
-A crossword is a puzzle where the solver must fill a grid of crossing slots with words. Each slot consists of a sequence of squares, where each square is to be filled with a letter. If one square is part of multiple slots, the slots are said to be crossing at that square. A slot's word is the concatenation of the letters in each of the slot's squares. The grid is validly filled if every square has a letter and every slot's word is valid.
-
-An American-style crossword consists of a two-dimensional grid of black and white squares, where every maximally contiguous horizontal or vertical sequence of white squares is a slot. In this special case of the crossword, every white square is necessarily part of two slots, a horizontal and vertical slot. Black squares are not part of any slot.
-
-## Relevant Papers
-
-- [Computer construction of crossword puzzles using precedence relationships](https://www.sciencedirect.com/science/article/pii/0004370276900199) (Mazlack, 1976)
-- [Search Lessons Learned from Crossword Puzzles](https://www.aaai.org/Papers/AAAI/1990/AAAI90-032.pdf) (Ginsberg et al, 1990)
-- [Dynamic Backtracking](https://arxiv.org/pdf/cs/9308101.pdf) (Ginsberg, 1993)
-- [Constraint Programming Lessons Learned from Crossword Puzzles](https://cs.uwaterloo.ca/~vanbeek/Publications/cai01a.pdf) (Beacham et al, 2001)
-- [Crossword Puzzles and Constraint Satisfaction](https://cs.uwaterloo.ca/~vanbeek/Publications/cai01a.pdf) (Connor et al, 2005)
-
 ## How to Use
 
 From this folder, run `pip install -e .` to install `swordsmith`.
@@ -50,6 +36,20 @@ For example:
 ```
 python3 swordsmith.py -w spreadthewordlist.dict -g 7xopen.txt -a
 ```
+
+## Background
+
+A crossword is a puzzle where the solver must fill a grid of crossing slots with words. Each slot consists of a sequence of squares, where each square is to be filled with a letter. If one square is part of multiple slots, the slots are said to be crossing at that square. A slot's word is the concatenation of the letters in each of the slot's squares. The grid is validly filled if every square has a letter and every slot's word is valid.
+
+An American-style crossword consists of a two-dimensional grid of black and white squares, where every maximally contiguous horizontal or vertical sequence of white squares is a slot. In this special case of the crossword, every white square is necessarily part of two slots, a horizontal and vertical slot. Black squares are not part of any slot.
+
+## Relevant Papers
+
+- [Computer construction of crossword puzzles using precedence relationships](https://www.sciencedirect.com/science/article/pii/0004370276900199) (Mazlack, 1976)
+- [Search Lessons Learned from Crossword Puzzles](https://www.aaai.org/Papers/AAAI/1990/AAAI90-032.pdf) (Ginsberg et al, 1990)
+- [Dynamic Backtracking](https://arxiv.org/pdf/cs/9308101.pdf) (Ginsberg, 1993)
+- [Constraint Programming Lessons Learned from Crossword Puzzles](https://cs.uwaterloo.ca/~vanbeek/Publications/cai01a.pdf) (Beacham et al, 2001)
+- [Crossword Puzzles and Constraint Satisfaction](https://cs.uwaterloo.ca/~vanbeek/Publications/cai01a.pdf) (Connor et al, 2005)
 
 ## Contributing
 
