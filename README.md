@@ -6,9 +6,9 @@ Forging crosswords, word by word.
 
 ## How to Use
 
-From this folder, run `pip install -e .` to install `swordsmith`.
+From this folder, run `pip install -e .` to install Swordsmith.
 
-Run `python3 swordsmith.py` using any of these optional command line flags:
+In the command line, run `python3 swordsmith` using any of these optional command line flags:
 
 ```
 usage: swordsmith.py [-h] [-w WORDLIST_PATH] [-m MIN_SCORE] [-g GRID_PATH] [-t NUM_TRIALS] [-a] [-s STRATEGY] [-k K] [-r RETRY_SECONDS]
@@ -34,7 +34,7 @@ options:
 For example:
 
 ```
-python3 swordsmith.py -w spreadthewordlist.dict -g 7xopen.txt -a
+python3 swordsmith -w spreadthewordlist.dict -g 7xopen.txt -a
 ```
 
 ## Background
