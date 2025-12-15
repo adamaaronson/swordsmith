@@ -74,7 +74,7 @@ class Filler(ABC):
                 continue
             if crossing_word not in wordlist.words:
                 return False  # created invalid word
-            if not crossword.fits_constraint(crossing_slot, crossing_word):
+            if not crossword.fits_constraints(crossing_slot, crossing_word, wordlist):
                 return False  # violated constraint
             if crossword.is_dupe(crossing_word):
                 return False  # created dupe
@@ -95,7 +95,13 @@ class Filler(ABC):
             word = crossword.words[slot]
             if Crossword.is_word_filled(word):
                 continue
-            matches = len(wordlist.get_matches(word, crossword.constraints[slot]))
+            matches = len(
+                wordlist.get_matches(
+                    word,
+                    crossword.regex_constraints[slot],
+                    crossword.score_constraints[slot],
+                )
+            )
             if matches < fewest_matches:
                 fewest_matches = matches
                 fewest_matches_slot = slot
@@ -118,7 +124,9 @@ class Filler(ABC):
             ):
                 num_matches = len(
                     wordlist.get_matches(
-                        crossing_word, crossword.constraints[crossing_slot]
+                        crossing_word,
+                        crossword.regex_constraints[crossing_slot],
+                        crossword.score_constraints[crossing_slot],
                     )
                 )
 
@@ -170,7 +178,9 @@ class DFSFiller(Filler):
         # iterate through all possible matches in the fewest-match slot
         previous_word = crossword.words[slot]
         matches = wordlist.get_matches(
-            crossword.words[slot], crossword.constraints[slot]
+            crossword.words[slot],
+            crossword.regex_constraints[slot],
+            crossword.score_constraints[slot],
         )
 
         # randomly shuffle matches
@@ -225,7 +235,9 @@ class DFSBackjumpFiller(Filler):
         # iterate through all possible matches in the fewest-match slot
         previous_word = crossword.words[slot]
         matches = wordlist.get_matches(
-            crossword.words[slot], crossword.constraints[slot]
+            crossword.words[slot],
+            crossword.regex_constraints[slot],
+            crossword.score_constraints[slot],
         )
 
         # randomly shuffle matches
@@ -284,7 +296,9 @@ class MinlookFiller(Filler):
         # iterate through all possible matches in the fewest-match slot
         previous_word = crossword.words[slot]
         matches = wordlist.get_matches(
-            crossword.words[slot], crossword.constraints[slot]
+            crossword.words[slot],
+            crossword.regex_constraints[slot],
+            crossword.score_constraints[slot],
         )
 
         # randomly shuffle matches
@@ -358,7 +372,9 @@ class MinlookBackjumpFiller(Filler):
         # iterate through all possible matches in the fewest-match slot
         previous_word = crossword.words[slot]
         matches = wordlist.get_matches(
-            crossword.words[slot], crossword.constraints[slot]
+            crossword.words[slot],
+            crossword.regex_constraints[slot],
+            crossword.score_constraints[slot],
         )
 
         # randomly shuffle matches

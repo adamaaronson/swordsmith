@@ -4,7 +4,7 @@ import os
 
 from crossword import AmericanCrossword
 from filler import DFSFiller, DFSBackjumpFiller, MinlookFiller, MinlookBackjumpFiller
-from wordlist import Wordlist
+from wordlist import read_wordlist
 
 
 WORDLIST_FOLDER = 'wordlist/'
@@ -15,19 +15,6 @@ GRID_SUFFIX = '.txt'
 def read_grid(filepath):
     with open(filepath, 'r') as f:
         return f.read().splitlines()
-
-
-def read_wordlist(filepath, scored=True, min_score=50):
-    with open(filepath, 'r') as f:
-        words = f.readlines()
-
-    words = [w.upper() for w in words]
-
-    if scored:
-        words = [w.split(';') for w in words]
-        words = [w[0] for w in words if len(w) == 1 or int(w[1]) >= min_score]
-
-    return Wordlist(words)
 
 
 def log_times(times, strategy):

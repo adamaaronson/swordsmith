@@ -4,12 +4,33 @@ import re
 from constants import EMPTY
 
 
+def read_wordlist(filepath, min_score=50):
+    with open(filepath, 'r') as f:
+        words = f.readlines()
+
+    words = [w.upper() for w in words]
+    words = [line.split(';') for line in words]
+    words = {
+        word[0]: (min_score if len(word) == 1 else int(word[1]))
+        for word in words
+        if len(word) == 1 or int(word[1]) >= min_score
+    }
+
+    wordlist = Wordlist(words.keys())
+    wordlist.scores.update(words)
+
+    return wordlist
+
+
 class Wordlist:
     """Collection of words to be used for filling a crossword"""
 
     def __init__(self, words):
         self.words = set(words)
         self.added_words = set()
+
+        # mapping from words to scores
+        self.scores = defaultdict(int)
 
         # mapping from wildcard patterns to lists of matching words, used for memoization
         self.pattern_matches = {}
@@ -52,9 +73,9 @@ class Wordlist:
         if word in self.added_words:
             self.added_words.remove(word)
 
-    def get_matches(self, pattern, regex):
-        if (pattern, regex) in self.pattern_matches:
-            return self.pattern_matches[(pattern, regex)]
+    def get_matches(self, pattern, regex, score):
+        if (pattern, regex, score) in self.pattern_matches:
+            return self.pattern_matches[(pattern, regex, score)]
 
         length = len(pattern)
         indices = [
@@ -69,7 +90,9 @@ class Wordlist:
 
         if regex:
             matches = [match for match in matches if re.search(regex, match)]
+        if score:
+            matches = [match for match in matches if self.scores[match] >= score]
 
-        self.pattern_matches[(pattern, regex)] = matches
+        self.pattern_matches[(pattern, regex, score)] = matches
 
         return matches

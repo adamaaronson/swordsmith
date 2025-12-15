@@ -21,8 +21,11 @@ class Crossword:
         self.wordset = set()
         """set of filled words in puzzle"""
 
-        self.constraints = defaultdict(str)
+        self.regex_constraints = defaultdict(str)
         """slot => regex constraining words for that slot"""
+
+        self.score_constraints = defaultdict(int)
+        """slot => minimum score for words in that slot"""
 
     def __str__(self):
         return '\n'.join(
@@ -94,17 +97,38 @@ class Crossword:
 
                 self.__put_letter_in_slot(word[index], crossing_slot, crossing_index)
 
-    def add_constraint(self, slot, regex):
+    def add_regex_constraint(self, slot, regex):
         """Add regex constraint to a given slot"""
         if slot not in self.slots:
             raise ValueError(f'{slot} is not a valid slot')
-        self.constraints[slot] = regex
+        self.regex_constraints[slot] = regex
 
-    def fits_constraint(self, slot, word):
-        """Returns whether the word fits that slot's constraint"""
-        if slot not in self.constraints:
+    def add_score_constraint(self, slot, score):
+        """Add score constraint to a given slot"""
+        if slot not in self.slots:
+            raise ValueError(f'{slot} is not a valid slot')
+        self.score_constraints[slot] = score
+
+    def fits_regex_constraint(self, slot, word):
+        """Returns whether the word fits that slot's regex constraint"""
+        if slot not in self.regex_constraints:
             return True
-        return re.search(self.constraints[slot], word) is not None
+        return re.search(self.regex_constraints[slot], word) is not None
+
+    def fits_score_constraint(self, slot, word, wordlist):
+        """Returns whether the word fits that slot's score constraint"""
+        if slot not in self.score_constraints:
+            return True
+        return wordlist.scores[word] >= self.score_constraints[slot]
+
+    def fits_constraints(self, slot, word, wordlist):
+        """Returns whether the word fits all of that slot's constraints"""
+        if not self.fits_regex_constraint(slot, word):
+            return False
+        if not self.fits_score_constraint(slot, word, wordlist):
+            return False
+
+        return True
 
     def is_dupe(self, word):
         """Returns whether or not a given word is already in the grid"""
@@ -117,12 +141,19 @@ class Crossword:
     def is_validly_filled(self, wordlist):
         """Returns whether the crossword is filled with words in the wordlist with no dupes"""
         if not self.is_filled():
+            raise ValueError('not filled')
             return False  # some unfilled words
         if not all(word in wordlist.words for word in self.words.values()):
+            raise ValueError('invalid words')
             return False  # some invalid words
         if not len(self.wordset) == len(self.words.values()):
+            raise ValueError('dupes')
             return False  # some dupes
-        if not all(self.fits_constraint(slot, self.words[slot]) for slot in self.slots):
+        if not all(
+            self.fits_constraints(slot, self.words[slot], wordlist)
+            for slot in self.slots
+        ):
+            raise ValueError('constraint violation')
             return False  # some constraint violations
         return True
 
