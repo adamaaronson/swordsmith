@@ -11,9 +11,7 @@ WORDLIST = '../swordsmith/wordlist/spreadthewordlist.dict'
     scope='function',
     params=[
         sw.DFSFiller(),
-        sw.DFSBackjumpFiller(),
         sw.MinlookFiller(5),
-        sw.MinlookBackjumpFiller(5),
     ],
 )
 def filler(request):

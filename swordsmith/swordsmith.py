@@ -3,7 +3,7 @@ import time
 import os
 
 from crossword import AmericanCrossword
-from filler import DFSFiller, DFSBackjumpFiller, MinlookFiller, MinlookBackjumpFiller
+from filler import DFSFiller, MinlookFiller
 from wordlist import read_wordlist
 
 
@@ -27,12 +27,8 @@ def log_times(times, strategy):
 def get_filler(args):
     if args.strategy == 'dfs':
         return DFSFiller()
-    elif args.strategy == 'dfsb':
-        return DFSBackjumpFiller()
     elif args.strategy == 'minlook':
         return MinlookFiller(args.k)
-    elif args.strategy == 'mlb':
-        return MinlookBackjumpFiller(args.k)
     else:
         return None
 

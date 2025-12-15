@@ -226,23 +226,6 @@ Implementation of `Filler` that uses a naive DFS algorithm.
 
 ---
 
-### DFSBackjumpFiller
-
-Implementation of `Filler` that uses a DFS algorithm with backjumping, as described in Ginsberg et al's 1990 paper [Search Lessons Learned from Crossword Puzzles](https://www.aaai.org/Papers/AAAI/1990/AAAI90-032.pdf).
-
-#### Methods
-
-- `fill(self, crossword, wordlist, animate)`
-  - If the grid is already filled, just return `True`
-  - Choose next slot to fill using `fewest_matches` heuristic
-    - If `num_matches` is zero, crossword is unfillable, return `False` and the failed slot
-  - Randomly iterate through all possible matches for that slot
-    - If the match can be placed without creating a dupe or invalid word, then recurse
-    - If a recursive call failed on a slot that this slot doesn't cross, backjump by giving up on this slot and passing along that failed slot
-  - If none of the matches worked, restore the slot's previous word and return `False` along with the failed slot
-
----
-
 ## MinlookFiller
 
 Implementation of `Filler` that uses a minlook heuristic, as described in Ginsberg et al's 1990 paper [Search Lessons Learned from Crossword Puzzles](https://www.aaai.org/Papers/AAAI/1990/AAAI90-032.pdf).
@@ -263,27 +246,3 @@ Implementation of `Filler` that uses a minlook heuristic, as described in Ginsbe
     - If the chosen match can be placed without creating a dupe or invalid word, then recurse
     - If the chosen match didn't work and there are more matches to try, use `minlook` again
   - If none of the matches worked, restore the slot's previous word and return `False`
-
----
-
-### MinlookBackjumpFiller
-
-Implementation of `Filler` that uses a minlook heuristic with backjumping, as described in Ginsberg et al's 1990 paper [Search Lessons Learned from Crossword Puzzles](https://www.aaai.org/Papers/AAAI/1990/AAAI90-032.pdf).
-
-#### Fields
-
-- `k`
-  - Number of potential matches to look ahead to at each fill step
-
-#### Methods
-
-- `fill(self, crossword, wordlist, animate)`
-  - If the grid is already filled, just return `True`
-  - Choose next slot to fill using `fewest_matches` heuristic
-    - If `num_matches` is zero, crossword is unfillable, return `False` and the failed slot
-  - Use `minlook` to look ahead to at most `k` random matches and find the one that yields the most possible crossing matches
-    - Throw out both the chosen match and the failed matches from the matches list
-    - If the chosen match can be placed without creating a dupe or invalid word, then recurse
-    - If the chosen match didn't work and there are more matches to try, use `minlook` again
-      - If a recursive call failed on a slot that this slot doesn't cross, backjump by giving up on this slot and passing along that failed slot
-  - If none of the matches worked, restore the slot's previous word and return `False` along with the failed slot
