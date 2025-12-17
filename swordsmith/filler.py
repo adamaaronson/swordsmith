@@ -5,7 +5,7 @@ import time
 from abc import ABC, abstractmethod
 from random import shuffle
 
-from crossword import Crossword
+from .crossword import Crossword
 
 
 def clear_terminal():

@@ -1,7 +1,7 @@
 from collections import defaultdict
 import re
 
-from constants import EMPTY
+from .constants import EMPTY
 
 
 def read_wordlist(filepath, min_score=50):

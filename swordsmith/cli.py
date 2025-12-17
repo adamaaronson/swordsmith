@@ -2,9 +2,9 @@ import argparse
 import time
 import os
 
-from crossword import AmericanCrossword
-from filler import DFSFiller, MinlookFiller
-from wordlist import read_wordlist
+from .crossword import AmericanCrossword
+from .filler import DFSFiller, MinlookFiller
+from .wordlist import read_wordlist
 
 
 WORDLIST_FOLDER = 'wordlist/'

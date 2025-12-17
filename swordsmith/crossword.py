@@ -1,7 +1,7 @@
 from collections import defaultdict
 import re
 
-from constants import BLOCK, EMPTY
+from .constants import BLOCK, EMPTY
 
 
 class Crossword:
