@@ -100,7 +100,7 @@ def main():
         help='filepath for grid',
     )
     parser.add_argument(
-        '-t',
+        '-n',
         '--num-trials',
         dest='num_trials',
         type=int,

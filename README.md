@@ -11,7 +11,7 @@ From this folder, run `pip install -e .` to install Swordsmith.
 In the command line, run `swordsmith` using any of these optional command line flags:
 
 ```
-usage: swordsmith [-h] [-w WORDLIST_PATH] [-m MIN_SCORE] [-g GRID_PATH] [-t NUM_TRIALS] [-a] [-s STRATEGY] [-k K]
+usage: swordsmith [-h] [-w WORDLIST_PATH] [-m MIN_SCORE] [-g GRID_PATH] [-n NUM_TRIALS] [-a] [-s STRATEGY] [-k K]
                   [-r RETRY_SECONDS]
 
 options:
@@ -22,7 +22,7 @@ options:
                         minimum word score
   -g GRID_PATH, --grid GRID_PATH
                         filepath for grid
-  -t NUM_TRIALS, --num-trials NUM_TRIALS
+  -n NUM_TRIALS, --num-trials NUM_TRIALS
                         number of grids to try filling
   -a, --animate         whether to animate grid filling
   -s STRATEGY, --strategy STRATEGY
@@ -35,7 +35,7 @@ options:
 For example:
 
 ```
-swordsmith -w spreadthewordlist.dict -g 7xopen.txt -a
+swordsmith -g 9x.txt -a -n 1
 ```
 
 ## Background
