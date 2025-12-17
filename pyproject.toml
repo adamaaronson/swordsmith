@@ -4,3 +4,6 @@ version = "0.1.0"
 
 [tool.setuptools.packages.find]
 where = ["."]
+
+[project.scripts]
+swordsmith = "swordsmith.cli:main"

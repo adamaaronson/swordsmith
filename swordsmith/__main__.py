@@ -1,3 +1,4 @@
-import swordsmith
+from .cli import main
 
-swordsmith.main()
+if __name__ == '__main__':
+    main()
